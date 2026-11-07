@@ -3,12 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
 app.use(express.json());
 
-// Enable CORS for Vercel and local development
 app.use(cors({
   origin: '*',
   credentials: true
@@ -16,9 +16,13 @@ app.use(cors({
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const JWT_SECRET = 'local_connect_secret_key_2026';
 
-// Configure Multer for PDF resume & document uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
@@ -32,7 +36,6 @@ const upload = multer({
   }
 });
 
-// Relational Mock Database
 let db = {
   users: [
     { id: '1', name: 'Owen (Student)', email: 'student@icct.edu.ph', password: 'password123', role: 'student', status: 'active', completedHours: 120, totalRequiredHours: 500 },
@@ -58,20 +61,6 @@ let db = {
       description: 'Seeking motivated IT students for full-stack web development internship using React and Node.js.',
       posted: '2 days ago',
       status: 'Active'
-    },
-    {
-      id: 2,
-      employerId: '2',
-      companyName: 'Metro Health Center',
-      title: 'Administrative Assistant OJT',
-      category: 'Administrative',
-      type: 'OJT / Internship',
-      mode: 'Hybrid',
-      location: 'Marikina City',
-      stipend: 'PHP 400 / day',
-      description: 'Assist municipal health records management, document processing, and patient coordination.',
-      posted: '1 day ago',
-      status: 'Active'
     }
   ],
   applications: [
@@ -87,10 +76,15 @@ let db = {
       status: 'Interview Scheduled',
       resumeUrl: '/uploads/sample_resume.pdf'
     }
+  ],
+  messages: [
+    { id: 1, senderId: '2', senderName: 'TechSolutions HR', recipientId: '1', text: 'Hello Owen, we reviewed your resume for the Junior Software Engineer OJT position. Let us schedule your technical interview!', timestamp: '10:30 AM' }
+  ],
+  notifications: [
+    { id: 1, recipientEmail: 'student@icct.edu.ph', subject: 'Application Status Update', body: 'Your application for Junior Software Engineer (OJT) has been updated to: Interview Scheduled.', timestamp: '10:28 AM', read: false }
   ]
 };
 
-// Middleware to verify JWT Token
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -103,7 +97,6 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// --- AUTHENTICATION API ---
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   const user = db.users.find(u => u.email === email && u.password === password);
@@ -132,76 +125,49 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
-// --- STUDENT OJT HOURS API ---
 app.patch('/api/student/hours', authenticateToken, (req, res) => {
   if (req.user.role !== 'student') return res.status(403).json({ error: 'Unauthorized' });
-  
   const { hoursToAdd } = req.body;
   const user = db.users.find(u => u.id === req.user.userId);
-  
   if (!user) return res.status(404).json({ error: 'User not found' });
 
   user.completedHours = (user.completedHours || 120) + parseInt(hoursToAdd || 0);
-  user.totalRequiredHours = user.totalRequiredHours || 500;
-
-  res.json({ 
-    message: 'Hours updated successfully', 
-    completedHours: user.completedHours,
-    totalRequiredHours: user.totalRequiredHours 
-  });
+  res.json({ message: 'Hours updated successfully', completedHours: user.completedHours, totalRequiredHours: user.totalRequiredHours || 500 });
 });
 
-// --- JOBS API ---
-app.get('/api/jobs', (req, res) => {
-  res.json(db.jobs);
-});
+app.get('/api/jobs', (req, res) => res.json(db.jobs));
 
 app.post('/api/jobs', authenticateToken, (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Unauthorized' });
-
   const { title, companyName, category, type, mode, location, stipend, description } = req.body;
   const newJob = {
     id: Date.now(),
     employerId: req.user.userId,
     companyName: companyName || req.user.name,
-    title,
-    category,
-    type,
-    mode,
-    location,
-    stipend,
-    description,
+    title, category, type, mode, location, stipend, description,
     posted: 'Just now',
     status: 'Active'
   };
-
   db.jobs.unshift(newJob);
   res.status(201).json({ message: 'Job posted successfully', job: newJob });
 });
 
-// --- DELETE JOB API ---
 app.delete('/api/jobs/:id', authenticateToken, (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Unauthorized' });
-
   const jobId = parseInt(req.params.id);
   const jobIndex = db.jobs.findIndex(j => j.id === jobId);
-
-  if (jobIndex === -1) return res.status(404).json({ error: 'Job listing not found' });
-
+  if (jobIndex === -1) return res.status(404).json({ error: 'Job not found' });
   db.jobs.splice(jobIndex, 1);
-  res.json({ message: 'Job listing deleted successfully' });
+  res.json({ message: 'Job deleted successfully' });
 });
 
-// --- APPLICATIONS API ---
 app.get('/api/applications/student', authenticateToken, (req, res) => {
-  const userApps = db.applications.filter(a => a.studentId === req.user.userId);
-  res.json(userApps);
+  res.json(db.applications.filter(a => a.studentId === req.user.userId));
 });
 
 app.post('/api/applications', authenticateToken, upload.single('resume'), (req, res) => {
   const { jobId } = req.body;
   const targetJob = db.jobs.find(j => j.id === parseInt(jobId));
-
   if (!targetJob) return res.status(404).json({ error: 'Job not found' });
 
   const newApp = {
@@ -216,14 +182,11 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
     status: 'Under Review',
     resumeUrl: req.file ? `/uploads/${req.file.filename}` : '/uploads/sample_resume.pdf'
   };
-
   db.applications.unshift(newApp);
-  res.status(201).json({ message: 'Application submitted successfully', application: newApp });
+  res.status(201).json({ message: 'Application submitted', application: newApp });
 });
 
-app.get('/api/applications/employer', authenticateToken, (req, res) => {
-  res.json(db.applications);
-});
+app.get('/api/applications/employer', authenticateToken, (req, res) => res.json(db.applications));
 
 app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
   const { status } = req.body;
@@ -231,33 +194,64 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
   if (!appItem) return res.status(404).json({ error: 'Application not found' });
 
   appItem.status = status;
-  res.json({ message: 'Status updated', application: appItem });
-});
 
-// --- ADMIN API ---
-app.get('/api/admin/analytics', authenticateToken, (req, res) => {
-  const totalHired = db.applications.filter(a => a.status === 'Hired').length;
-  const totalApps = db.applications.length;
-  res.json({
-    totalListings: db.jobs.length,
-    totalApplications: totalApps,
-    placedStudents: 128 + totalHired,
-    partnerCompanies: db.companies.length,
-    pendingVerifications: db.companies.filter(c => c.status === 'Pending Review').length,
-    placementRate: totalApps ? ((totalHired / totalApps) * 100).toFixed(1) + '%' : '92%'
+  // Simulate sending email notification
+  db.notifications.unshift({
+    id: Date.now(),
+    recipientEmail: appItem.studentEmail,
+    subject: `Application Status Updated: ${appItem.jobTitle}`,
+    body: `Hello ${appItem.studentName}, your application status for ${appItem.companyName} has been updated to: ${status}.`,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    read: false
   });
+
+  res.json({ message: 'Status updated and email notification dispatched', application: appItem });
 });
 
-app.get('/api/admin/companies', authenticateToken, (req, res) => {
-  res.json(db.companies);
+// --- MESSAGING ENDPOINTS ---
+app.get('/api/messages', authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+  const userMessages = db.messages.filter(m => m.senderId === userId || m.recipientId === userId);
+  res.json(userMessages);
 });
 
+app.post('/api/messages', authenticateToken, (req, res) => {
+  const { recipientId, text } = req.body;
+  const newMessage = {
+    id: Date.now(),
+    senderId: req.user.userId,
+    senderName: req.user.name,
+    recipientId: recipientId,
+    text,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+  db.messages.push(newMessage);
+  res.status(201).json({ message: 'Message sent', data: newMessage });
+});
+
+// --- EMAIL NOTIFICATIONS ENDPOINT ---
+app.get('/api/notifications', authenticateToken, (req, res) => {
+  const userNotifs = db.notifications.filter(n => n.recipientEmail === req.user.email);
+  res.json(userNotifs);
+});
+
+app.get('/api/admin/export-csv', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+  let csvContent = "Application ID,Student Name,Student Email,Job Title,Company,Applied Date,Status\n";
+  db.applications.forEach(app => {
+    csvContent += `"${app.id}","${app.studentName}","${app.studentEmail}","${app.jobTitle}","${app.companyName}","${app.appliedDate}","${app.status}"\n`;
+  });
+  res.header('Content-Type', 'text/csv');
+  res.attachment('LocalConnect_Placement_Report.csv');
+  res.send(csvContent);
+});
+
+app.get('/api/admin/companies', authenticateToken, (req, res) => res.json(db.companies));
 app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
   const company = db.companies.find(c => c.id === parseInt(req.params.id));
   if (!company) return res.status(404).json({ error: 'Company not found' });
-
   company.status = 'Verified';
-  res.json({ message: 'Company verified successfully', company });
+  res.json({ message: 'Verified', company });
 });
 
 const PORT = process.env.PORT || 5000;
