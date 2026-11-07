@@ -219,8 +219,21 @@ app.get('/api/admin/analytics', authenticateToken, (req, res) => {
     placedStudents: 128 + totalHired,
     partnerCompanies: db.companies.length,
     pendingVerifications: db.companies.filter(c => c.status === 'Pending Review').length,
-    placementRate: totalApps ? ((totalHired / totalApps) * 100).toFixed(1) + '%' : '92 shadow%'
+    placementRate: totalApps ? ((totalHired / totalApps) * 100).toFixed(1) + '%' : '92%'
   });
 });
 
-app.get('/api/admin/companies', authenticateToken
+app.get('/api/admin/companies', authenticateToken, (req, res) => {
+  res.json(db.companies);
+});
+
+app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
+  const company = db.companies.find(c => c.id === parseInt(req.params.id));
+  if (!company) return res.status(404).json({ error: 'Company not found' });
+
+  company.status = 'Verified';
+  res.json({ message: 'Company verified successfully', company });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Local Connect Backend running on port ${PORT}`));
