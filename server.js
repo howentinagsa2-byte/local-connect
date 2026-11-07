@@ -104,7 +104,6 @@ app.post('/api/auth/register', (req, res) => {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
-  // STRICT SECURITY CHECK: Only allow admin@localnet.ph to register as admin
   if (role === 'admin' && email !== 'admin@localnet.ph') {
     return res.status(403).json({ error: 'Unauthorized: Admin registration is restricted.' });
   }
@@ -180,6 +179,52 @@ app.post('/api/auth/login', (req, res) => {
       role: user.role,
       completedHours: user.completedHours || 120,
       totalRequiredHours: user.totalRequiredHours || 500
+    }
+  });
+});
+
+// Forgot Password Endpoint
+app.post('/api/auth/forgot-password', (req, res) => {
+  const { email, newPassword } = req.body;
+  const user = db.users.find(u => u.email === email);
+  if (!user) {
+    return res.status(404).json({ error: 'Email address not found in our system.' });
+  }
+  user.password = newPassword;
+  res.json({ message: 'Password updated successfully! You can now sign in with your new password.' });
+});
+
+// Update Profile Endpoint
+app.patch('/api/auth/profile', authenticateToken, (req, res) => {
+  const { name, email, newPassword } = req.body;
+  const user = db.users.find(u => u.id === req.user.userId);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+
+  if (email && email !== user.email) {
+    const emailExists = db.users.find(u => u.email === email);
+    if (emailExists) return res.status(400).json({ error: 'Email is already in use by another account.' });
+    user.email = email;
+  }
+
+  if (name) user.name = name;
+  if (newPassword) user.password = newPassword;
+
+  const newToken = jwt.sign(
+    { userId: user.id, role: user.role, name: user.name, email: user.email },
+    JWT_SECRET,
+    { expiresIn: '8h' }
+  );
+
+  res.json({
+    message: 'Profile updated successfully',
+    token: newToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      completedHours: user.completedHours,
+      totalRequiredHours: user.totalRequiredHours
     }
   });
 });

@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, Mail, Bell, Settings, Award, UserPlus } from 'lucide-react';
+import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, Mail, Bell, Settings, Award, UserPlus, User } from 'lucide-react';
 
 const API_BASE = "https://local-connect-api-t9jx.onrender.com";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('local_connect_user')) || null);
   const [token, setToken] = useState(() => localStorage.getItem('local_connect_token') || '');
-  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+  const [authMode, setAuthMode] = useState('login'); // 'login', 'register', 'forgot'
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [role, setRole] = useState('student');
   const [loginError, setLoginError] = useState('');
+  const [loginSuccess, setLoginSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('browse');
   const [jobs, setJobs] = useState([]);
@@ -25,8 +27,14 @@ export default function App() {
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
   const [resumeFile, setResumeFile] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [adminTab, setAdminTab] = useState('companies');
-  const [newJob, setNewJob] = useState({ title: '', companyName: '', category: 'IT / Web Dev', type: 'OJT / Internship', mode: 'On-site', location: '', stipend: '', description: '' });
+
+  // Profile update state
+  const [profileName, setProfileName] = useState(currentUser?.name || '');
+  const [profileEmail, setProfileEmail] = useState(currentUser?.email || '');
+  const [profilePassword, setProfilePassword] = useState('');
+  const [profileMessage, setProfileMessage] = useState('');
 
   useEffect(() => { fetchJobs(); }, []);
   useEffect(() => {
@@ -35,6 +43,8 @@ export default function App() {
       if (currentUser.role === 'employer') fetchEmployerApplications();
       if (currentUser.role === 'admin') fetchAdminCompanies();
       fetchNotifications();
+      setProfileName(currentUser.name);
+      setProfileEmail(currentUser.email);
     }
   }, [currentUser, token]);
 
@@ -47,17 +57,58 @@ export default function App() {
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setLoginError('');
+    setLoginSuccess('');
     setIsSubmitting(true);
-    const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
-    const payload = authMode === 'login' 
-      ? { email, password }
-      : { name, email, password, role };
 
     try {
-      const res = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      if (authMode === 'forgot') {
+        const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, newPassword })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setLoginSuccess(data.message);
+          setAuthMode('login');
+          setPassword('');
+        } else {
+          setLoginError(data.error || 'Password reset failed.');
+        }
+      } else {
+        const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+        const payload = authMode === 'login' ? { email, password } : { name, email, password, role };
+
+        const res = await fetch(`${API_BASE}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setCurrentUser(data.user);
+          setToken(data.token);
+          localStorage.setItem('local_connect_user', JSON.stringify(data.user));
+          localStorage.setItem('local_connect_token', data.token);
+        } else {
+          setLoginError(data.error || 'Authentication failed.');
+        }
+      }
+    } catch (err) {
+      setLoginError('Could not connect to backend server.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setProfileMessage('');
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ name: profileName, email: profileEmail, newPassword: profilePassword || undefined })
       });
       const data = await res.json();
       if (res.ok) {
@@ -65,13 +116,13 @@ export default function App() {
         setToken(data.token);
         localStorage.setItem('local_connect_user', JSON.stringify(data.user));
         localStorage.setItem('local_connect_token', data.token);
+        setProfilePassword('');
+        setProfileMessage('Profile updated successfully!');
       } else {
-        setLoginError(data.error || 'Authentication failed.');
+        setProfileMessage(data.error || 'Failed to update profile.');
       }
     } catch (err) {
-      setLoginError('Could not connect to backend server.');
-    } finally {
-      setIsSubmitting(false);
+      setProfileMessage('Network error updating profile.');
     }
   };
 
@@ -201,12 +252,22 @@ export default function App() {
           </div>
 
           {/* Auth Mode Toggle Tabs */}
-          <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 mb-6">
-            <button onClick={() => { setAuthMode('login'); setLoginError(''); }} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${authMode === 'login' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Sign In</button>
-            <button onClick={() => { setAuthMode('register'); setLoginError(''); }} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${authMode === 'register' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Create Account</button>
-          </div>
+          {authMode !== 'forgot' && (
+            <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 mb-6">
+              <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${authMode === 'login' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Sign In</button>
+              <button onClick={() => { setAuthMode('register'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${authMode === 'register' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Create Account</button>
+            </div>
+          )}
+
+          {authMode === 'forgot' && (
+            <div className="mb-4 text-center">
+              <h3 className="text-sm font-bold text-white">Reset Your Password</h3>
+              <p className="text-xs text-slate-400 mt-1">Enter your registered email and choose a new password.</p>
+            </div>
+          )}
 
           {loginError && <div className="mb-4 p-3 bg-red-950/60 text-red-400 rounded-xl text-xs font-semibold border border-red-900/50 text-center flex items-center justify-center gap-2"><AlertCircle className="w-4 h-4" /><span>{loginError}</span></div>}
+          {loginSuccess && <div className="mb-4 p-3 bg-emerald-950/60 text-emerald-400 rounded-xl text-xs font-semibold border border-emerald-900/50 text-center flex items-center justify-center gap-2"><CheckCircle className="w-4 h-4" /><span>{loginSuccess}</span></div>}
           
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             {authMode === 'register' && (
@@ -219,10 +280,18 @@ export default function App() {
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
               <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. admin@localnet.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
-            </div>
+            {authMode !== 'forgot' && (
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+              </div>
+            )}
+            {authMode === 'forgot' && (
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">New Password</label>
+                <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+              </div>
+            )}
             {authMode === 'register' && (
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Account Role</label>
@@ -232,8 +301,17 @@ export default function App() {
                 </select>
               </div>
             )}
-            <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/25 text-sm mt-2 disabled:opacity-50">{isSubmitting ? 'Processing...' : (authMode === 'login' ? 'Sign In to Portal' : 'Register New Account')}</button>
+            <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/25 text-sm mt-2 disabled:opacity-50">{isSubmitting ? 'Processing...' : (authMode === 'login' ? 'Sign In to Portal' : authMode === 'register' ? 'Register New Account' : 'Reset Password')}</button>
           </form>
+
+          {/* Forgot Password Link */}
+          <div className="mt-4 text-center">
+            {authMode === 'login' ? (
+              <button onClick={() => { setAuthMode('forgot'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-blue-400 hover:underline">Forgot password?</button>
+            ) : (
+              <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-slate-400 hover:text-white">Back to Sign In</button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -252,15 +330,15 @@ export default function App() {
               <span className="text-[11px] font-semibold text-slate-400 capitalize">{currentUser.role} Workspace</span>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <button onClick={() => setIsNotificationsOpen(!isNotificationsOpen)} className="relative p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-lg">{unreadCount}</span>}
             </button>
-            <div className="text-right hidden sm:block">
-              <p className="text-xs font-bold text-slate-200">{currentUser.name}</p>
-              <p className="text-[11px] text-slate-400">{currentUser.email}</p>
-            </div>
+            <button onClick={() => setIsProfileOpen(true)} className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors">
+              <User className="w-3.5 h-3.5 text-blue-400" />
+              <span className="hidden sm:inline">{currentUser.name}</span>
+            </button>
             <button onClick={handleLogout} className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"><LogOut className="w-3.5 h-3.5" /><span>Logout</span></button>
           </div>
         </div>
@@ -288,6 +366,34 @@ export default function App() {
                 </div>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* User Profile Settings Modal */}
+      {isProfileOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-800">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-white">Account Settings & Profile</h3>
+              <button onClick={() => setIsProfileOpen(false)} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
+            </div>
+            {profileMessage && <div className={`mb-4 p-3 rounded-xl text-xs font-semibold text-center ${profileMessage.includes('success') ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-900' : 'bg-red-950/60 text-red-400 border border-red-900'}`}>{profileMessage}</div>}
+            <form onSubmit={handleProfileUpdate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Full Name / Entity Name</label>
+                <input type="text" required value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Email Address</label>
+                <input type="email" required value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">New Password (leave blank to keep current)</label>
+                <input type="password" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+              </div>
+              <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/25">Save Changes</button>
+            </form>
           </div>
         </div>
       )}
