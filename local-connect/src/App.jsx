@@ -267,22 +267,6 @@ export default function App() {
     } catch (err) {}
   };
 
-  const updateTargetHours = async (targetVal) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/student/hours`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ targetHours: targetVal })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const updatedUser = { ...currentUser, totalRequiredHours: data.totalRequiredHours };
-        setCurrentUser(updatedUser);
-        localStorage.setItem('local_connect_user', JSON.stringify(updatedUser));
-      }
-    } catch (err) {}
-  };
-
   const filteredJobs = jobs.filter(j => {
     const matchesSearch = j.title.toLowerCase().includes(searchTerm.toLowerCase()) || j.companyName.toLowerCase().includes(searchTerm.toLowerCase()) || j.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || j.category === selectedCategory;
@@ -528,128 +512,117 @@ export default function App() {
                   </button>
                 </div>
               </div>
-              <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/25">Save Changes</button>
+              <div className="flex justify-end space-x-3 pt-2">
+                <button type="button" onClick={() => setIsProfileOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/25">Save Changes</button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Main Workspace Navigation */}
+      {/* Main Role-Based Workspace Views */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentUser.role === 'student' && (
           <div className="space-y-6">
-            {/* OJT Progress Tracker Banner */}
-            <div className="bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border border-blue-900/40 rounded-3xl p-6 shadow-xl backdrop-blur-md">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-800">
+                <span className="text-xs font-bold text-slate-400 uppercase">Internship Progress</span>
+                <div className="flex items-baseline justify-between mt-2">
+                  <span className="text-2xl font-black text-white">{currentUser.completedHours || 120} <span className="text-xs font-normal text-slate-400">/ {currentUser.totalRequiredHours || 500} hrs</span></span>
+                  <span className="text-xs font-bold text-blue-400">{Math.round(((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%</span>
+                </div>
+                <div className="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full" style={{ width: `${Math.min(100, ((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
+                </div>
+              </div>
+              <div className="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white">OJT Hours Tracker</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Track your completed internship hours toward graduation requirements.</p>
+                  <span className="text-xs font-bold text-slate-400 uppercase">Active Applications</span>
+                  <span className="block text-2xl font-black text-white mt-2">{applications.length}</span>
                 </div>
-                <div className="flex items-center gap-2 bg-slate-900/80 px-4 py-2 rounded-2xl border border-slate-800">
-                  <span className="text-xs font-semibold text-slate-300">Target Hours:</span>
-                  <select 
-                    value={currentUser.totalRequiredHours || 500} 
-                    onChange={(e) => updateTargetHours(e.target.value)}
-                    className="bg-slate-950 text-blue-400 font-bold text-xs rounded-xl px-2 py-1 border border-slate-800 outline-none"
-                  >
-                    <option value="243">243 Hours</option>
-                    <option value="400">400 Hours</option>
-                    <option value="500">500 Hours</option>
-                    <option value="600">600 Hours</option>
-                  </select>
+                <span className="text-[11px] text-slate-400 mt-2">Track status updates in real-time</span>
+              </div>
+              <div className="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                <div>
+                  <span className="text-xs font-bold text-slate-400 uppercase">System Status</span>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-sm font-bold text-slate-200">Connected & Verified</span>
+                  </div>
                 </div>
-              </div>
-
-              {/* Progress Bar Calculation */}
-              <div className="w-full bg-slate-900 rounded-full h-4 overflow-hidden border border-slate-800 p-0.5">
-                <div 
-                  className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full transition-all duration-500" 
-                  style={{ width: `${Math.min(100, ((currentUser.completedHours || 0) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between items-center mt-2 text-xs font-semibold text-slate-300">
-                <span>Completed: <strong className="text-blue-400">{currentUser.completedHours || 0} hrs</strong></span>
-                <span>Remaining: <strong className="text-indigo-400">{Math.max(0, (currentUser.totalRequiredHours || 500) - (currentUser.completedHours || 0))} hrs</strong></span>
-                <span>Target: <strong className="text-white">{currentUser.totalRequiredHours || 500} hrs</strong></span>
+                <span className="text-[11px] text-slate-400 mt-2">ICCT Colleges Capstone Platform</span>
               </div>
             </div>
 
-            {/* Student Navigation Tabs */}
-            <div className="flex space-x-2 border-b border-slate-800 pb-2">
+            <div className="flex space-x-2 border-b border-slate-800 pb-3">
               <button onClick={() => setActiveTab('browse')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'browse' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Browse OJT Listings</button>
-              <button onClick={() => setActiveTab('applications')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'applications' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>My Applications ({applications.length})</button>
+              <button onClick={() => setActiveTab('my-apps')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'my-apps' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>My Applications ({applications.length})</button>
             </div>
 
             {activeTab === 'browse' && (
-              <>
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
-                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search OJT postings by title, company, or location..." className="w-full pl-11 pr-4 py-3 bg-slate-900 rounded-2xl border border-slate-800 text-xs text-slate-100 outline-none focus:border-blue-500" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input type="text" placeholder="Search by job title, company, or location..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs text-slate-100 outline-none focus:border-blue-500" />
                   </div>
-                  <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="px-4 py-3 bg-slate-900 rounded-2xl border border-slate-800 text-xs text-slate-300 outline-none">
+                  <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="px-4 py-3 bg-slate-900 rounded-xl border border-slate-800 text-xs text-slate-300 outline-none">
                     <option value="All">All Categories</option>
                     <option value="IT / Web Dev">IT / Web Dev</option>
                     <option value="Logistics">Logistics</option>
                     <option value="Healthcare">Healthcare</option>
                   </select>
-                  <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)} className="px-4 py-3 bg-slate-900 rounded-2xl border border-slate-800 text-xs text-slate-300 outline-none">
-                    <option value="All">All Types</option>
-                    <option value="OJT / Internship">OJT / Internship</option>
-                    <option value="Part-time">Part-time</option>
-                  </select>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredJobs.length === 0 ? (
-                    <div className="col-span-2 text-center py-12 text-slate-500 text-xs">No OJT listings match your search criteria.</div>
+                    <div className="col-span-full py-12 text-center text-slate-500 text-xs">No matching OJT listings found.</div>
                   ) : (
                     filteredJobs.map(job => (
-                      <div key={job.id} className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl hover:border-slate-700 transition-all flex flex-col justify-between">
+                      <div key={job.id} className="bg-slate-900/70 backdrop-blur-md rounded-2xl border border-slate-800 p-6 flex flex-col justify-between hover:border-slate-700 transition-all">
                         <div>
                           <div className="flex justify-between items-start mb-3">
-                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-950 text-blue-400 border border-blue-900/50">{job.category}</span>
-                            <span className="text-xs text-slate-500">{job.posted}</span>
+                            <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-blue-950 text-blue-400 border border-blue-900">{job.category}</span>
+                            <span className="text-[11px] text-slate-400">{job.posted}</span>
                           </div>
-                          <h4 className="text-base font-bold text-white mb-1">{job.title}</h4>
-                          <p className="text-xs font-medium text-slate-400 mb-3 flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5 text-indigo-400" /><span>{job.companyName}</span></p>
-                          <div className="flex flex-wrap gap-2 mb-4 text-[11px] text-slate-300">
-                            <span className="bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 flex items-center gap-1"><MapPin className="w-3 h-3 text-red-400" />{job.location}</span>
-                            <span className="bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 flex items-center gap-1"><Clock className="w-3 h-3 text-amber-400" />{job.type} ({job.mode})</span>
-                            <span className="bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 flex items-center gap-1"><DollarSign className="w-3 h-3 text-emerald-400" />{job.stipend}</span>
+                          <h3 className="text-base font-bold text-white mb-1">{job.title}</h3>
+                          <p className="text-xs font-semibold text-slate-300 mb-3">{job.companyName}</p>
+                          <div className="flex flex-wrap gap-2 mb-4 text-[11px] text-slate-400">
+                            <span className="flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"><MapPin className="w-3 h-3 text-slate-500" />{job.location}</span>
+                            <span className="flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"><Clock className="w-3 h-3 text-slate-500" />{job.type}</span>
+                            <span className="flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"><DollarSign className="w-3 h-3 text-slate-500" />{job.stipend}</span>
                           </div>
-                          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">{job.description}</p>
+                          <p className="text-xs text-slate-400 line-clamp-2 mb-4">{job.description}</p>
                         </div>
-                        <button onClick={() => setSelectedJobForApp(job)} className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/25 transition-all">Apply for OJT Position</button>
+                        <button onClick={() => setSelectedJobForApp(job)} className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20">Apply for OJT Position</button>
                       </div>
                     ))
                   )}
                 </div>
-              </>
+              </div>
             )}
 
-            {activeTab === 'applications' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-                <h3 className="text-sm font-bold text-white mb-4">My Submitted Applications</h3>
-                {applications.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-8">You haven't applied to any OJT listings yet.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {applications.map(app => (
-                      <div key={app.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            {activeTab === 'my-apps' && (
+              <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">Submitted Applications</div>
+                <div className="divide-y divide-slate-800">
+                  {applications.length === 0 ? (
+                    <p className="p-6 text-center text-xs text-slate-500">You have not submitted any applications yet.</p>
+                  ) : (
+                    applications.map(app => (
+                      <div key={app.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                          <h4 className="text-sm font-bold text-white">{app.jobTitle}</h4>
+                          <h4 className="font-bold text-sm text-white">{app.jobTitle}</h4>
                           <p className="text-xs text-slate-400">{app.companyName} • Applied on {app.appliedDate}</p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${app.status === 'Interview Scheduled' ? 'bg-emerald-950 text-emerald-400 border-emerald-900' : 'bg-amber-950 text-amber-400 border-amber-900'}`}>
-                            {app.status}
-                          </span>
+                        <div className="flex items-center space-x-3">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${app.status === 'Interview Scheduled' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' : 'bg-blue-950 text-blue-400 border border-blue-900'}`}>{app.status}</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -657,115 +630,96 @@ export default function App() {
 
         {currentUser.role === 'employer' && (
           <div className="space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="text-base font-bold text-white">Partner Employer Dashboard</h3>
-                  <p className="text-xs text-slate-400">Review student applicants and manage OJT placement pipelines.</p>
-                </div>
+            <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-white">Employer Dashboard</h3>
+                <p className="text-xs text-slate-400 mt-1">Review student applicants and manage OJT recruitment pipelines.</p>
               </div>
+              <span className="px-3 py-1 bg-emerald-950 text-emerald-400 border border-emerald-900 text-xs font-bold rounded-full">Partner Verified</span>
+            </div>
 
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Incoming Student Applications</h4>
-              {applications.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-8">No applications received yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {applications.map(app => (
-                    <div key={app.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">Incoming Student Applicants</div>
+              <div className="divide-y divide-slate-800">
+                {applications.length === 0 ? (
+                  <p className="p-6 text-center text-xs text-slate-500">No applicants received yet.</p>
+                ) : (
+                  applications.map(app => (
+                    <div key={app.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
-                        <h5 className="text-sm font-bold text-white">{app.studentName}</h5>
-                        <p className="text-xs text-slate-400">{app.studentEmail} • Applied for <strong className="text-blue-400">{app.jobTitle}</strong></p>
+                        <h4 className="font-bold text-sm text-white">{app.studentName} <span className="text-xs font-normal text-slate-400">({app.studentEmail})</span></h4>
+                        <p className="text-xs text-blue-400 mt-0.5">Applied for: {app.jobTitle}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <select 
-                          value={app.status} 
-                          onChange={(e) => handleUpdateAppStatus(app.id, e.target.value)}
-                          className="px-3 py-1.5 bg-slate-900 text-xs text-slate-200 rounded-xl border border-slate-800 outline-none"
-                        >
+                      <div className="flex items-center space-x-3">
+                        <select value={app.status} onChange={(e) => handleUpdateAppStatus(app.id, e.target.value)} className="px-3 py-1.5 bg-slate-950 rounded-xl text-xs text-slate-200 border border-slate-800 outline-none">
                           <option value="Under Review">Under Review</option>
                           <option value="Interview Scheduled">Interview Scheduled</option>
-                          <option value="Accepted">Accepted</option>
+                          <option value="Hired">Hired</option>
                           <option value="Rejected">Rejected</option>
                         </select>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
         )}
 
         {currentUser.role === 'admin' && (
           <div className="space-y-6">
-            <div className="flex justify-between items-center bg-slate-900 p-6 rounded-3xl border border-slate-800">
+            <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h3 className="text-lg font-bold text-white">Admin Control Panel</h3>
-                <p className="text-xs text-slate-400">Manage partner company approvals, system job listings, and placement reports.</p>
+                <h3 className="text-lg font-bold text-white">Placement Coordinator Control Center</h3>
+                <p className="text-xs text-slate-400 mt-1">Manage partner companies, publish official OJT slots, and generate reports.</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setIsPostJobOpen(true)} className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/25">
-                  <PlusCircle className="w-4 h-4" /><span>Post Official Job</span>
-                </button>
-                <button onClick={handleExportCSV} className="flex items-center space-x-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs border border-slate-700">
-                  <Download className="w-4 h-4" /><span>Export CSV Report</span>
-                </button>
+                <button onClick={handleExportCSV} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"><Download className="w-4 h-4" />Export CSV Report</button>
+                <button onClick={() => setIsPostJobOpen(true)} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2"><PlusCircle className="w-4 h-4" />Post OJT Slot</button>
               </div>
             </div>
 
-            <div className="flex space-x-2 border-b border-slate-800 pb-2">
-              <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Partner Applications ({companies.length})</button>
-              <button onClick={() => setAdminTab('jobs')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'jobs' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Manage Job Listings ({jobs.length})</button>
+            <div className="flex space-x-2 border-b border-slate-800 pb-3">
+              <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Partner Companies ({companies.length})</button>
+              <button onClick={() => setAdminTab('jobs')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'jobs' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Active Job Listings ({jobs.length})</button>
             </div>
 
             {adminTab === 'companies' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-                <h4 className="text-sm font-bold text-white mb-4">Partner Company Verification Queue</h4>
-                {companies.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-8">No partner applications submitted.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {companies.map(c => (
-                      <div key={c.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex justify-between items-center">
-                        <div>
-                          <h5 className="text-sm font-bold text-white">{c.name}</h5>
-                          <p className="text-xs text-slate-400">{c.industry} • {c.location} • {c.email}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${c.status === 'Verified' ? 'bg-emerald-950 text-emerald-400 border-emerald-900' : 'bg-amber-950 text-amber-400 border-amber-900'}`}>
-                            {c.status}
-                          </span>
-                          {c.status !== 'Verified' && (
-                            <button onClick={() => handleVerifyCompany(c.id)} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs">Verify & Approve</button>
-                          )}
-                        </div>
+              <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">Company Partnership Approvals</div>
+                <div className="divide-y divide-slate-800">
+                  {companies.map(c => (
+                    <div key={c.id} className="p-5 flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-sm text-white">{c.name}</h4>
+                        <p className="text-xs text-slate-400">{c.industry} • {c.location} • {c.email}</p>
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <div className="flex items-center space-x-3">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${c.status === 'Verified' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' : 'bg-amber-950 text-amber-400 border border-amber-900'}`}>{c.status}</span>
+                        {c.status !== 'Verified' && (
+                          <button onClick={() => handleVerifyCompany(c.id)} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">Approve</button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             {adminTab === 'jobs' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
-                <h4 className="text-sm font-bold text-white mb-4">Active System Job Listings</h4>
-                {jobs.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-8">No job listings found.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {jobs.map(j => (
-                      <div key={j.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex justify-between items-center">
-                        <div>
-                          <h5 className="text-sm font-bold text-white">{j.title}</h5>
-                          <p className="text-xs text-slate-400">{j.companyName} • {j.location} • {j.type}</p>
-                        </div>
-                        <button onClick={() => handleDeleteJob(j.id)} className="p-2 rounded-xl bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-900 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+              <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">Published OJT Positions</div>
+                <div className="divide-y divide-slate-800">
+                  {jobs.map(j => (
+                    <div key={j.id} className="p-5 flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-sm text-white">{j.title}</h4>
+                        <p className="text-xs text-slate-400">{j.companyName} • {j.location} • {j.stipend}</p>
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <button onClick={() => handleDeleteJob(j.id)} className="p-2 bg-red-950/60 hover:bg-red-900/80 text-red-400 rounded-xl border border-red-900/50 transition-all"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -780,60 +734,63 @@ export default function App() {
               <h3 className="text-base font-bold text-white">Apply for {selectedJobForApp.title}</h3>
               <button onClick={() => setSelectedJobForApp(null)} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
             </div>
-            <p className="text-xs text-slate-400 mb-4">Company: <strong className="text-slate-200">{selectedJobForApp.companyName}</strong></p>
             <form onSubmit={handleApplySubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-2">Upload Resume / CV (PDF)</label>
-                <input type="file" accept=".pdf" onChange={(e) => setResumeFile(e.target.files[0])} className="w-full text-xs text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
+                <label className="block text-xs font-bold text-slate-400 mb-1">Upload Resume (PDF)</label>
+                <input type="file" accept="application/pdf" onChange={(e) => setResumeFile(e.target.files[0])} className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
               </div>
-              <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/25">Submit Application</button>
+              <div className="flex justify-end space-x-3 pt-2">
+                <button type="button" onClick={() => setSelectedJobForApp(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/25">Submit Application</button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Admin Post Job Modal */}
+      {/* Post Job Modal (Admin) */}
       {isPostJobOpen && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-800 max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-800">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-white">Post New Job Listing</h3>
+              <h3 className="text-base font-bold text-white">Post New OJT Listing</h3>
               <button onClick={() => setIsPostJobOpen(false)} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
             </div>
             <form onSubmit={handlePostJobSubmit} className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">Job Title</label>
-                <input type="text" required value={newJob.title} onChange={(e) => setNewJob({ ...newJob, title: e.target.value })} placeholder="e.g. Junior Web Developer" className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+                <input type="text" required value={newJob.title} onChange={(e) => setNewJob({ ...newJob, title: e.target.value })} placeholder="e.g. Junior Web Developer" className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">Company Name</label>
-                <input type="text" required value={newJob.companyName} onChange={(e) => setNewJob({ ...newJob, companyName: e.target.value })} placeholder="e.g. TechSolutions Inc." className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+                <input type="text" required value={newJob.companyName} onChange={(e) => setNewJob({ ...newJob, companyName: e.target.value })} placeholder="e.g. TechSolutions Inc." className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 mb-1">Category</label>
-                  <input type="text" required value={newJob.category} onChange={(e) => setNewJob({ ...newJob, category: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+                  <select value={newJob.category} onChange={(e) => setNewJob({ ...newJob, category: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none">
+                    <option value="IT / Web Dev">IT / Web Dev</option>
+                    <option value="Logistics">Logistics</option>
+                    <option value="Healthcare">Healthcare</option>
+                  </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">Type</label>
-                  <input type="text" required value={newJob.type} onChange={(e) => setNewJob({ ...newJob, type: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 mb-1">Location</label>
-                  <input type="text" required value={newJob.location} onChange={(e) => setNewJob({ ...newJob, location: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">Stipend</label>
-                  <input type="text" required value={newJob.stipend} onChange={(e) => setNewJob({ ...newJob, stipend: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+                  <input type="text" required value={newJob.location} onChange={(e) => setNewJob({ ...newJob, location: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">Description</label>
-                <textarea required rows={4} value={newJob.description} onChange={(e) => setNewJob({ ...newJob, description: e.target.value })} placeholder="Enter job description..." className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500 resize-none"></textarea>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Stipend / Allowance</label>
+                <input type="text" required value={newJob.stipend} onChange={(e) => setNewJob({ ...newJob, stipend: e.target.value })} placeholder="e.g. PHP 500 / day" className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
-              <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/25">Publish Job Listing</button>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Job Description</label>
+                <textarea required rows="3" value={newJob.description} onChange={(e) => setNewJob({ ...newJob, description: e.target.value })} placeholder="Detailed intern responsibilities..." className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500 resize-none"></textarea>
+              </div>
+              <div className="flex justify-end space-x-3 pt-2">
+                <button type="button" onClick={() => setIsPostJobOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/25">Publish OJT Slot</button>
+              </div>
             </form>
           </div>
         </div>

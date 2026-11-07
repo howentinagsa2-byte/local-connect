@@ -288,7 +288,6 @@ app.patch('/api/student/hours', authenticateToken, (req, res) => {
 
 app.get('/api/jobs', (req, res) => res.json(db.jobs));
 
-// Enhanced Job Posting Endpoint supporting flexible keys from frontend state
 app.post('/api/jobs', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
   
@@ -301,7 +300,6 @@ app.post('/api/jobs', authenticateToken, (req, res) => {
     location, 
     stipend, 
     description,
-    // Support alternate property names if sent from different form states (e.g. newJob object fields)
     jobTitle, 
     company 
   } = req.body;
@@ -429,5 +427,5 @@ app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
   res.json({ message: 'Company verified successfully', company });
 });
 
-const PORT = process.5 || process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
