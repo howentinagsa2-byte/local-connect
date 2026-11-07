@@ -1,4 +1,4 @@
-// server.js - Complete Full-Stack Express Backend with Permanent JSON Persistence
+// server.js - Complete Full-Stack Express Backend with Job Editing & Permanent JSON Persistence
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -28,7 +28,7 @@ if (!fs.existsSync(uploadDir)) {
 const JWT_SECRET = 'local_connect_secret_key_2026';
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// Persistent Database Load/Save Helpers (Saves all registered users, companies, jobs, applications & notifications)
+// Persistent Database Load/Save Helpers
 const loadDb = () => {
   if (!fs.existsSync(DB_FILE)) {
     const initialDb = {
@@ -138,7 +138,7 @@ app.post('/api/auth/register', (req, res) => {
   };
 
   db.users.push(newUser);
-  saveDb(db); // Persists to database.json permanently
+  saveDb(db);
 
   const token = jwt.sign(
     { userId: newUser.id, role: newUser.role, name: newUser.name, email: newUser.email },
@@ -160,7 +160,7 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
-// Partner Company Application (Persisted to database.json)
+// Partner Company Application
 app.post('/api/auth/partner-apply', (req, res) => {
   const db = loadDb();
   const { name, industry, location, email, password } = req.body;
@@ -185,7 +185,7 @@ app.post('/api/auth/partner-apply', (req, res) => {
     email,
     password
   });
-  saveDb(db); // Persists partnership application
+  saveDb(db);
 
   res.status(201).json({ message: 'Partnership application submitted successfully! Please wait for admin approval.' });
 });
@@ -307,7 +307,7 @@ app.patch('/api/student/hours', authenticateToken, (req, res) => {
   if (hoursToRemove !== undefined) user.completedHours = Math.max(0, user.completedHours - parseInt(hoursToRemove || 0));
   if (targetHours !== undefined) user.totalRequiredHours = parseInt(targetHours);
 
-  saveDb(db); // Persist hours update
+  saveDb(db);
 
   res.json({ 
     message: 'Hours updated successfully', 
@@ -351,6 +351,42 @@ app.post('/api/jobs', authenticateToken, (req, res) => {
   db.jobs.unshift(newJob);
   saveDb(db);
   res.status(201).json({ message: 'Job posted successfully by Admin', job: newJob });
+});
+
+// Update Job Listing Route (Admin only)
+app.put('/api/jobs/:id', authenticateToken, (req, res) => {
+  const db = loadDb();
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Unauthorized: Only the admin can edit OJT job postings.' });
+  }
+  
+  const jobId = parseInt(req.params.id);
+  const jobIndex = db.jobs.findIndex(j => j.id === jobId);
+  
+  if (jobIndex === -1) {
+    return res.status(404).json({ error: 'Job listing not found.' });
+  }
+
+  const { title, companyName, category, type, mode, location, stipend, description } = req.body;
+  
+  if (!title || !companyName || !description) {
+    return res.status(400).json({ error: 'Job title, company name, and description are required fields.' });
+  }
+
+  db.jobs[jobIndex] = {
+    ...db.jobs[jobIndex],
+    title,
+    companyName,
+    category: category || db.jobs[jobIndex].category,
+    type: type || db.jobs[jobIndex].type,
+    mode: mode || db.jobs[jobIndex].mode,
+    location: location || db.jobs[jobIndex].location,
+    stipend: stipend || db.jobs[jobIndex].stipend,
+    description
+  };
+
+  saveDb(db);
+  res.json({ message: 'Job listing updated successfully', job: db.jobs[jobIndex] });
 });
 
 app.delete('/api/jobs/:id', authenticateToken, (req, res) => {
@@ -406,7 +442,6 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
   res.status(201).json({ message: 'Application submitted', application: newApp });
 });
 
-// Employer Applications: Filtered specifically to the employer's company
 app.get('/api/applications/employer', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'employer' && req.user.role !== 'admin') {
@@ -482,7 +517,6 @@ app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
   res.json({ message: 'Company verified successfully', company });
 });
 
-// Cancel / Remove Company Partnership Route (Admin only)
 app.delete('/api/admin/companies/:id', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });

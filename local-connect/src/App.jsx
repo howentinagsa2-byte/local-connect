@@ -1,4 +1,4 @@
-// src/App.jsx - Complete Full-Stack Frontend with Persistence, Hours Tracker & Role Workspaces
+// src/App.jsx - Complete Full-Stack Frontend with Admin Job Edit Option & Persistence
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, EyeOff, Download, Mail, Bell, Settings, Award, UserPlus, User, Plus, Minus } from 'lucide-react';
 
@@ -40,6 +40,10 @@ export default function App() {
   const [selectedType, setSelectedType] = useState('All');
   const [selectedJobForApp, setSelectedJobForApp] = useState(null);
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
+  
+  // Job Editing States
+  const [editingJob, setEditingJob] = useState(null);
+  const [isEditJobOpen, setIsEditJobOpen] = useState(false);
   
   const [hoursInput, setHoursInput] = useState('');
   
@@ -245,6 +249,29 @@ export default function App() {
       });
       if (res.ok) { alert('Job listing published successfully!'); setIsPostJobOpen(false); fetchJobs(); }
     } catch (err) {}
+  };
+
+  const handleEditJobSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingJob) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/jobs/${editingJob.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(editingJob)
+      });
+      if (res.ok) {
+        alert('Job listing updated successfully!');
+        setIsEditJobOpen(false);
+        setEditingJob(null);
+        fetchJobs();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to update job listing.');
+      }
+    } catch (err) {
+      alert('Network error updating job listing.');
+    }
   };
 
   const handleDeleteJob = async (jobId) => {
@@ -540,7 +567,7 @@ export default function App() {
               </div>
               <div className="flex justify-end space-x-3 pt-2">
                 <button type="button" onClick={() => setIsProfileOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/25">Save Changes</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg">Save Changes</button>
               </div>
             </form>
           </div>
@@ -755,7 +782,10 @@ export default function App() {
                         <h4 className="font-bold text-sm text-white">{j.title}</h4>
                         <p className="text-xs text-slate-400">{j.companyName} • {j.location} • {j.stipend}</p>
                       </div>
-                      <button onClick={() => handleDeleteJob(j.id)} className="p-2 bg-red-950/60 hover:bg-red-900/80 text-red-400 rounded-xl border border-red-900/50 transition-all"><Trash2 className="w-4 h-4" /></button>
+                      <div className="flex items-center space-x-2">
+                        <button onClick={() => { setEditingJob(j); setIsEditJobOpen(true); }} className="px-3 py-1.5 bg-blue-950/60 hover:bg-blue-900 text-blue-400 rounded-xl border border-blue-900/50 text-xs font-bold transition-all">Edit</button>
+                        <button onClick={() => handleDeleteJob(j.id)} className="p-2 bg-red-950/60 hover:bg-red-900/80 text-red-400 rounded-xl border border-red-900/50 transition-all"><Trash2 className="w-4 h-4" /></button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -827,6 +857,53 @@ export default function App() {
               <div className="flex justify-end space-x-3 pt-2">
                 <button type="button" onClick={() => setIsPostJobOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
                 <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg">Publish OJT Slot</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isEditJobOpen && editingJob && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-800">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-white">Edit OJT Listing</h3>
+              <button onClick={() => { setIsEditJobOpen(false); setEditingJob(null); }} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
+            </div>
+            <form onSubmit={handleEditJobSubmit} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Job Title</label>
+                <input type="text" required value={editingJob.title} onChange={(e) => setEditingJob({ ...editingJob, title: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Partner Company Name</label>
+                <input type="text" required value={editingJob.companyName} onChange={(e) => setEditingJob({ ...editingJob, companyName: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Category</label>
+                  <select value={editingJob.category} onChange={(e) => setEditingJob({ ...editingJob, category: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none">
+                    <option value="IT / Web Dev">IT / Web Dev</option>
+                    <option value="Logistics">Logistics</option>
+                    <option value="Healthcare">Healthcare</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Location</label>
+                  <input type="text" required value={editingJob.location} onChange={(e) => setEditingJob({ ...editingJob, location: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Stipend / Allowance</label>
+                <input type="text" required value={editingJob.stipend} onChange={(e) => setEditingJob({ ...editingJob, stipend: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Job Description</label>
+                <textarea required rows="3" value={editingJob.description} onChange={(e) => setEditingJob({ ...editingJob, description: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500 resize-none"></textarea>
+              </div>
+              <div className="flex justify-end space-x-3 pt-2">
+                <button type="button" onClick={() => { setIsEditJobOpen(false); setEditingJob(null); }} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg">Save Changes</button>
               </div>
             </form>
           </div>
