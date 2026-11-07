@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, Mail, Bell } from 'lucide-react';
+import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, Mail, Bell, Settings } from 'lucide-react';
 
 const API_BASE = "https://local-connect-api-t9jx.onrender.com";
 
@@ -21,7 +21,6 @@ export default function App() {
   const [selectedJobForApp, setSelectedJobForApp] = useState(null);
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
   const [resumeFile, setResumeFile] = useState(null);
-  const [viewResumeUrl, setViewResumeUrl] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [newJob, setNewJob] = useState({ title: '', companyName: '', category: 'IT / Web Dev', type: 'OJT / Internship', mode: 'On-site', location: '', stipend: '', description: '' });
 
@@ -259,41 +258,76 @@ export default function App() {
             <p className="mt-2 text-blue-100 text-sm">Discover verified local internships and entry-level positions tailored for IT students.</p>
           </div>
 
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="w-full">
-              <div className="flex justify-between items-center mb-2">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <div>
                 <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">OJT Internship Progress</span>
-                <span className="text-xs font-bold text-blue-600">
-                  {currentUser.completedHours || 120} / {currentUser.totalRequiredHours || 500} Hours Logged
-                </span>
+                <p className="text-xs text-slate-400 mt-0.5">Target Requirement: <strong className="text-blue-600">{currentUser.totalRequiredHours || 500} Hours</strong></p>
               </div>
-              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                <div className="bg-blue-600 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, ((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={async () => {
+                    const choice = prompt("Select your OJT Required Hours program:\n1. 243 Hours\n2. 400 Hours\n3. 600 Hours\n\nEnter number (243, 400, or 600):", "500");
+                    const parsed = parseInt(choice);
+                    if (![243, 400, 600].includes(parsed)) {
+                      alert("Invalid selection. Please choose 243, 400, or 600.");
+                      return;
+                    }
+                    try {
+                      const res = await fetch(`${API_BASE}/api/student/hours`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ targetHours: parsed })
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        const updatedUser = { ...currentUser, totalRequiredHours: data.totalRequiredHours };
+                        setCurrentUser(updatedUser);
+                        localStorage.setItem('local_connect_user', JSON.stringify(updatedUser));
+                        alert(`Target hours updated to ${parsed} hours!`);
+                      }
+                    } catch (err) {}
+                  }}
+                  className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                >
+                  <Settings className="w-3.5 h-3.5" /> Change Target Program
+                </button>
+                <button 
+                  onClick={async () => {
+                    const hours = prompt("Enter hours to add (e.g., 8):", "8");
+                    if (!hours || isNaN(hours)) return;
+                    try {
+                      const res = await fetch(`${API_BASE}/api/student/hours`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ hoursToAdd: hours })
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        const updatedUser = { ...currentUser, completedHours: data.completedHours, totalRequiredHours: data.totalRequiredHours };
+                        setCurrentUser(updatedUser);
+                        localStorage.setItem('local_connect_user', JSON.stringify(updatedUser));
+                        alert('Hours logged successfully!');
+                      }
+                    } catch (err) {}
+                  }}
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-sm"
+                >
+                  + Log Daily Hours
+                </button>
               </div>
             </div>
-            <button 
-              onClick={async () => {
-                const hours = prompt("Enter hours to add (e.g., 8):", "8");
-                if (!hours || isNaN(hours)) return;
-                try {
-                  const res = await fetch(`${API_BASE}/api/student/hours`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ hoursToAdd: hours })
-                  });
-                  if (res.ok) {
-                    const data = await res.json();
-                    const updatedUser = { ...currentUser, completedHours: data.completedHours, totalRequiredHours: data.totalRequiredHours };
-                    setCurrentUser(updatedUser);
-                    localStorage.setItem('local_connect_user', JSON.stringify(updatedUser));
-                    alert('Hours updated successfully!');
-                  }
-                } catch (err) {}
-              }}
-              className="whitespace-nowrap px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition-colors shadow-sm"
-            >
-              + Log Daily Hours
-            </button>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-bold text-blue-600">
+                {currentUser.completedHours || 120} / {currentUser.totalRequiredHours || 500} Hours Completed
+              </span>
+              <span className="text-xs font-semibold text-slate-500">
+                {Math.min(100, Math.round(((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100))}%
+              </span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+              <div className="bg-blue-600 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, ((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

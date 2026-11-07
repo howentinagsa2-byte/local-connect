@@ -125,12 +125,16 @@ app.post('/api/auth/login', (req, res) => {
 
 app.patch('/api/student/hours', authenticateToken, (req, res) => {
   if (req.user.role !== 'student') return res.status(403).json({ error: 'Unauthorized' });
-  const { hoursToAdd } = req.body;
+  const { hoursToAdd, targetHours } = req.body;
   const user = db.users.find(u => u.id === req.user.userId);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  user.completedHours = (user.completedHours || 120) + parseInt(hoursToAdd || 0);
-  user.totalRequiredHours = user.totalRequiredHours || 500;
+  if (hoursToAdd !== undefined) {
+    user.completedHours = (user.completedHours || 120) + parseInt(hoursToAdd || 0);
+  }
+  if (targetHours !== undefined) {
+    user.totalRequiredHours = parseInt(targetHours);
+  }
 
   res.json({ message: 'Hours updated successfully', completedHours: user.completedHours, totalRequiredHours: user.totalRequiredHours });
 });
@@ -184,7 +188,6 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
   };
   db.applications.unshift(newApp);
 
-  // Notify employer
   const employerUser = db.users.find(u => u.name === targetJob.companyName || u.role === 'employer');
   if (employerUser) {
     db.notifications.unshift({
