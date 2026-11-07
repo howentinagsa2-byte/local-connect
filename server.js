@@ -44,7 +44,7 @@ let db = {
   users: [
     { id: '1', name: 'Owen (Student)', email: 'student@icct.edu.ph', password: 'password123', role: 'student', status: 'active', completedHours: 120, totalRequiredHours: 500 },
     { id: '2', name: 'TechSolutions HR', email: 'hr@techsolutions.com', password: 'password123', role: 'employer', status: 'verified' },
-    { id: '3', name: 'Placement Coordinator', email: 'admin@localconnect.gov.ph', password: 'password123', role: 'admin', status: 'active' }
+    { id: '3', name: 'Placement Coordinator', email: 'admin@localnet.ph', password: 'password123', role: 'admin', status: 'active' }
   ],
   companies: [
     { id: 1, employerId: '2', name: 'TechSolutions Inc.', industry: 'Information Technology', location: 'San Mateo, Rizal', status: 'Verified', dateApplied: '2026-09-01' },
@@ -104,8 +104,8 @@ app.post('/api/auth/register', (req, res) => {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
-  // STRICT SECURITY CHECK: Only allow your authorized email to register as admin
-  if (role === 'admin' && email !== 'admin@localconnect.gov.ph') {
+  // STRICT SECURITY CHECK: Only allow admin@localnet.ph to register as admin
+  if (role === 'admin' && email !== 'admin@localnet.ph') {
     return res.status(403).json({ error: 'Unauthorized: Admin registration is restricted.' });
   }
 
