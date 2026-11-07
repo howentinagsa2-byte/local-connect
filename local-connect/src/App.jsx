@@ -1,4 +1,4 @@
-// src/App.jsx - Complete Full-Stack Frontend (Admin-only job posting, filtered employer panel)
+// src/App.jsx - Complete Full-Stack Frontend with Persistence, Hours Tracker & Role Workspaces
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, EyeOff, Download, Mail, Bell, Settings, Award, UserPlus, User, Plus, Minus } from 'lucide-react';
 
@@ -10,7 +10,6 @@ export default function App() {
   const [authMode, setAuthMode] = useState('login'); // 'login', 'register', 'partner', 'forgot'
   const [name, setName] = useState('');
   
-  // Remember Me state initialization
   const [email, setEmail] = useState(() => localStorage.getItem('remembered_email') || '');
   const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem('remembered_email'));
 
@@ -18,12 +17,10 @@ export default function App() {
   const [newPassword, setNewPassword] = useState('');
   const [role, setRole] = useState('student');
   
-  // Show/Hide Password states
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showProfilePassword, setShowProfilePassword] = useState(false);
 
-  // Partner application fields
   const [compName, setCompName] = useState('');
   const [compIndustry, setCompIndustry] = useState('');
   const [compLocation, setCompLocation] = useState('');
@@ -44,10 +41,8 @@ export default function App() {
   const [selectedJobForApp, setSelectedJobForApp] = useState(null);
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
   
-  // Hours input state for student tracker
   const [hoursInput, setHoursInput] = useState('');
   
-  // New Job form state
   const [newJob, setNewJob] = useState({
     title: '',
     companyName: '',
@@ -134,11 +129,8 @@ export default function App() {
         const data = await res.json();
         if (res.ok) {
           if (authMode === 'login') {
-            if (rememberMe) {
-              localStorage.setItem('remembered_email', email);
-            } else {
-              localStorage.removeItem('remembered_email');
-            }
+            if (rememberMe) localStorage.setItem('remembered_email', email);
+            else localStorage.removeItem('remembered_email');
           }
           setCurrentUser(data.user);
           setToken(data.token);
@@ -273,7 +265,7 @@ export default function App() {
       if (res.ok) {
         fetchEmployerApplications();
         fetchNotifications();
-        alert(`Status updated to "${newStatus}". Notification dispatched to student email.`);
+        alert(`Status updated to "${newStatus}". Notification dispatched to student.`);
       }
     } catch (err) {}
   };
@@ -360,16 +352,16 @@ export default function App() {
               <>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
-                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. John Doe" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. John Doe" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
-                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. student@icct.edu.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. student@icct.edu.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                    <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -414,19 +406,18 @@ export default function App() {
               <>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
-                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. admin@localnet.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. admin@localnet.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                    <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
-                {/* Remember Me Checkbox */}
                 <div className="flex items-center justify-between text-xs pt-1">
                   <label className="flex items-center space-x-2 cursor-pointer text-slate-300">
                     <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-blue-600 focus:ring-0 cursor-pointer" />
@@ -440,12 +431,12 @@ export default function App() {
               <>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
-                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. hr@company.com" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. hr@company.com" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">New Password</label>
                   <div className="relative">
-                    <input type={showNewPassword ? "text" : "password"} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                    <input type={showNewPassword ? "text" : "password"} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                     <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                       {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -459,17 +450,10 @@ export default function App() {
             </button>
           </form>
 
-          {/* Forgot Password / Switch Links */}
           <div className="mt-4 text-center">
-            {authMode === 'login' && (
-              <button onClick={() => { setAuthMode('forgot'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-blue-400 hover:underline">Forgot password?</button>
-            )}
-            {authMode !== 'login' && authMode !== 'partner' && (
-              <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-slate-400 hover:text-white">Back to Sign In</button>
-            )}
-            {authMode === 'partner' && (
-              <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-slate-400 hover:text-white">Already approved? Sign In</button>
-            )}
+            {authMode === 'login' && <button onClick={() => { setAuthMode('forgot'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-blue-400 hover:underline">Forgot password?</button>}
+            {authMode !== 'login' && authMode !== 'partner' && <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-slate-400 hover:text-white">Back to Sign In</button>}
+            {authMode === 'partner' && <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-slate-400 hover:text-white">Already approved? Sign In</button>}
           </div>
         </div>
       </div>
@@ -503,7 +487,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Notifications Drawer */}
       {isNotificationsOpen && (
         <div className="absolute right-4 top-20 w-80 bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-800 z-50 p-4">
           <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
@@ -512,7 +495,7 @@ export default function App() {
           </div>
           <div className="space-y-2.5 max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
-              <p className="text-xs text-slate-500 text-center py-4">No notifications for your email.</p>
+              <p className="text-xs text-slate-500 text-center py-4">No notifications.</p>
             ) : (
               notifications.map(n => (
                 <div key={n.id} onClick={() => handleMarkNotificationRead(n.id)} className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${n.read ? 'bg-slate-950/40 border-slate-800/80 opacity-60' : 'bg-blue-950/40 border-blue-800/60 shadow-md'}`}>
@@ -529,7 +512,6 @@ export default function App() {
         </div>
       )}
 
-      {/* User Profile Settings Modal */}
       {isProfileOpen && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-800">
@@ -565,7 +547,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Role-Based Workspace Views */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentUser.role === 'student' && (
           <div className="space-y-6">
@@ -580,20 +561,12 @@ export default function App() {
                   <div className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full" style={{ width: `${Math.min(100, ((currentUser.completedHours || 0) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
                 </div>
 
-                {/* Interactive Add/Remove Hours Controls */}
                 <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center gap-2">
-                  <input 
-                    type="number" 
-                    min="1" 
-                    placeholder="Hours" 
-                    value={hoursInput} 
-                    onChange={(e) => setHoursInput(e.target.value)} 
-                    className="w-20 px-2.5 py-1.5 bg-slate-950 rounded-xl text-xs border border-slate-800 text-white outline-none focus:border-blue-500" 
-                  />
-                  <button onClick={() => handleModifyHours(true)} className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md shadow-emerald-600/20">
+                  <input type="number" min="1" placeholder="Hours" value={hoursInput} onChange={(e) => setHoursInput(e.target.value)} className="w-20 px-2.5 py-1.5 bg-slate-950 rounded-xl text-xs border border-slate-800 text-white outline-none focus:border-blue-500" />
+                  <button onClick={() => handleModifyHours(true)} className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md">
                     <Plus className="w-3.5 h-3.5" /> Add
                   </button>
-                  <button onClick={() => handleModifyHours(false)} className="flex-1 py-1.5 px-2 bg-red-600/80 hover:bg-red-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md shadow-red-600/20">
+                  <button onClick={() => handleModifyHours(false)} className="flex-1 py-1.5 px-2 bg-red-600/80 hover:bg-red-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md">
                     <Minus className="w-3.5 h-3.5" /> Remove
                   </button>
                 </div>
@@ -611,7 +584,7 @@ export default function App() {
                   <span className="text-xs font-bold text-slate-400 uppercase">System Status</span>
                   <div className="flex items-center space-x-2 mt-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-sm font-bold text-slate-200">Connected & Verified</span>
+                    <span className="text-sm font-bold text-slate-200">Connected & Persistent</span>
                   </div>
                 </div>
                 <span className="text-[11px] text-slate-400 mt-2">ICCT Colleges Capstone Platform</span>
@@ -658,7 +631,7 @@ export default function App() {
                           </div>
                           <p className="text-xs text-slate-400 line-clamp-2 mb-4">{job.description}</p>
                         </div>
-                        <button onClick={() => setSelectedJobForApp(job)} className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20">Apply for OJT Position</button>
+                        <button onClick={() => setSelectedJobForApp(job)} className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg">Apply for OJT Position</button>
                       </div>
                     ))
                   )}
@@ -696,7 +669,7 @@ export default function App() {
             <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold text-white">{currentUser.name} Dashboard</h3>
-                <p className="text-xs text-slate-400 mt-1">Showing only the specific students who applied to {currentUser.name} ({currentUser.email}).</p>
+                <p className="text-xs text-slate-400 mt-1">Showing only the students who applied to {currentUser.name} ({currentUser.email}).</p>
               </div>
               <span className="px-3 py-1 bg-emerald-950 text-emerald-400 border border-emerald-900 text-xs font-bold rounded-full">Partner Verified</span>
             </div>
@@ -737,8 +710,8 @@ export default function App() {
                 <p className="text-xs text-slate-400 mt-1">Manage partner companies, publish official OJT slots, and generate reports.</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={handleExportCSV} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"><Download className="w-4 h-4" />Export CSV Report</button>
-                <button onClick={() => setIsPostJobOpen(true)} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2"><PlusCircle className="w-4 h-4" />Post Official OJT Slot</button>
+                <button onClick={handleExportCSV} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-2"><Download className="w-4 h-4" />Export CSV Report</button>
+                <button onClick={() => setIsPostJobOpen(true)} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-2"><PlusCircle className="w-4 h-4" />Post Official OJT Slot</button>
               </div>
             </div>
 
@@ -792,7 +765,6 @@ export default function App() {
         )}
       </main>
 
-      {/* Application Modal */}
       {selectedJobForApp && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-800">
@@ -807,14 +779,13 @@ export default function App() {
               </div>
               <div className="flex justify-end space-x-3 pt-2">
                 <button type="button" onClick={() => setSelectedJobForApp(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/25">Submit Application</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg">Submit Application</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Post Job Modal (Admin Only) */}
       {isPostJobOpen && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-800">
@@ -855,7 +826,7 @@ export default function App() {
               </div>
               <div className="flex justify-end space-x-3 pt-2">
                 <button type="button" onClick={() => setIsPostJobOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-600/25">Publish OJT Slot</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg">Publish OJT Slot</button>
               </div>
             </form>
           </div>

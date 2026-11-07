@@ -1,4 +1,4 @@
-// server.js - Complete Full-Stack Express Backend (Admin-only job posting, email-scoped notifications & filtered employer applicants)
+// server.js - Complete Full-Stack Express Backend with Permanent JSON Persistence
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -28,7 +28,7 @@ if (!fs.existsSync(uploadDir)) {
 const JWT_SECRET = 'local_connect_secret_key_2026';
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// Persistent Database Load/Save Helpers
+// Persistent Database Load/Save Helpers (Saves all registered users, companies, jobs, applications & notifications)
 const loadDb = () => {
   if (!fs.existsSync(DB_FILE)) {
     const initialDb = {
@@ -109,7 +109,7 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// User Registration
+// Permanent Student Registration
 app.post('/api/auth/register', (req, res) => {
   const db = loadDb();
   const { name, email, password, role } = req.body;
@@ -138,7 +138,7 @@ app.post('/api/auth/register', (req, res) => {
   };
 
   db.users.push(newUser);
-  saveDb(db);
+  saveDb(db); // Persists to database.json permanently
 
   const token = jwt.sign(
     { userId: newUser.id, role: newUser.role, name: newUser.name, email: newUser.email },
@@ -147,7 +147,7 @@ app.post('/api/auth/register', (req, res) => {
   );
 
   res.status(201).json({
-    message: 'Account created successfully',
+    message: 'Account created and saved successfully',
     token,
     user: {
       id: newUser.id,
@@ -160,7 +160,7 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
-// Partner Company Application
+// Partner Company Application (Persisted to database.json)
 app.post('/api/auth/partner-apply', (req, res) => {
   const db = loadDb();
   const { name, industry, location, email, password } = req.body;
@@ -185,9 +185,9 @@ app.post('/api/auth/partner-apply', (req, res) => {
     email,
     password
   });
-  saveDb(db);
+  saveDb(db); // Persists partnership application
 
-  res.status(201).json({ message: 'Partnership application submitted successfully! Please wait for admin approval before logging in.' });
+  res.status(201).json({ message: 'Partnership application submitted successfully! Please wait for admin approval.' });
 });
 
 app.post('/api/auth/login', (req, res) => {
@@ -247,13 +247,13 @@ app.post('/api/auth/forgot-password', (req, res) => {
     if (comp) {
       comp.password = newPassword;
       saveDb(db);
-      return res.json({ message: 'Password updated successfully! You can now sign in once approved.' });
+      return res.json({ message: 'Password updated successfully!' });
     }
     return res.status(404).json({ error: 'Email address not found in our system.' });
   }
   user.password = newPassword;
   saveDb(db);
-  res.json({ message: 'Password updated successfully! You can now sign in with your new password.' });
+  res.json({ message: 'Password updated successfully!' });
 });
 
 app.patch('/api/auth/profile', authenticateToken, (req, res) => {
@@ -264,7 +264,7 @@ app.patch('/api/auth/profile', authenticateToken, (req, res) => {
 
   if (email && email !== user.email) {
     const emailExists = db.users.find(u => u.email === email);
-    if (emailExists) return res.status(400).json({ error: 'Email is already in use by another account.' });
+    if (emailExists) return res.status(400).json({ error: 'Email is already in use.' });
     user.email = email;
   }
 
@@ -292,7 +292,7 @@ app.patch('/api/auth/profile', authenticateToken, (req, res) => {
   });
 });
 
-// Student Hours Tracker Route
+// Student Hours Tracker
 app.patch('/api/student/hours', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'student') return res.status(403).json({ error: 'Unauthorized' });
@@ -303,17 +303,11 @@ app.patch('/api/student/hours', authenticateToken, (req, res) => {
   if (user.completedHours === undefined) user.completedHours = 120;
   if (user.totalRequiredHours === undefined) user.totalRequiredHours = 500;
 
-  if (hoursToAdd !== undefined) {
-    user.completedHours += parseInt(hoursToAdd || 0);
-  }
-  if (hoursToRemove !== undefined) {
-    user.completedHours = Math.max(0, user.completedHours - parseInt(hoursToRemove || 0));
-  }
-  if (targetHours !== undefined) {
-    user.totalRequiredHours = parseInt(targetHours);
-  }
+  if (hoursToAdd !== undefined) user.completedHours += parseInt(hoursToAdd || 0);
+  if (hoursToRemove !== undefined) user.completedHours = Math.max(0, user.completedHours - parseInt(hoursToRemove || 0));
+  if (targetHours !== undefined) user.totalRequiredHours = parseInt(targetHours);
 
-  saveDb(db);
+  saveDb(db); // Persist hours update
 
   res.json({ 
     message: 'Hours updated successfully', 
@@ -327,7 +321,7 @@ app.get('/api/jobs', (req, res) => {
   res.json(db.jobs);
 });
 
-// STRICT ADMIN-ONLY JOB POSTING
+// Admin-Only Job Postings
 app.post('/api/jobs', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'admin') {
@@ -336,7 +330,7 @@ app.post('/api/jobs', authenticateToken, (req, res) => {
   
   const { title, companyName, category, type, mode, location, stipend, description } = req.body;
   if (!title || !companyName || !description) {
-    return res.status(400).json({ error: 'Job title, company name, and description are required fields.' });
+    return res.status(400).json({ error: 'All required fields must be filled.' });
   }
 
   const newJob = {
@@ -394,7 +388,6 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
   };
   db.applications.unshift(newApp);
 
-  // Send notification strictly to the registered employer email matching the company name
   const employerUser = db.companies.find(c => c.name === targetJob.companyName) || db.users.find(u => u.name === targetJob.companyName);
   const employerEmail = employerUser ? employerUser.email : null;
 
@@ -413,18 +406,15 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
   res.status(201).json({ message: 'Application submitted', application: newApp });
 });
 
-// Employer Applications: Strictly filtered so employers only see applicants who applied to their company name
+// Employer Applications: Filtered specifically to the employer's company
 app.get('/api/applications/employer', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'employer' && req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Unauthorized' });
   }
 
-  if (req.user.role === 'admin') {
-    return res.json(db.applications);
-  }
+  if (req.user.role === 'admin') return res.json(db.applications);
 
-  // Filter applications where companyName matches the employer's company name exactly
   const employerCompanyName = req.user.name;
   const filteredApps = db.applications.filter(a => a.companyName.toLowerCase() === employerCompanyName.toLowerCase());
   
@@ -438,8 +428,6 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
   if (!appItem) return res.status(404).json({ error: 'Application not found' });
 
   appItem.status = status;
-
-  // Send notification strictly to the registered student email
   db.notifications.unshift({
     id: Date.now(),
     recipientEmail: appItem.studentEmail,
@@ -455,9 +443,7 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
 
 app.get('/api/notifications', authenticateToken, (req, res) => {
   const db = loadDb();
-  const userEmail = req.user.email;
-  const userNotifications = db.notifications.filter(n => n.recipientEmail === userEmail);
-  res.json(userNotifications);
+  res.json(db.notifications.filter(n => n.recipientEmail === req.user.email));
 });
 
 app.patch('/api/notifications/:id/read', authenticateToken, (req, res) => {
@@ -496,6 +482,7 @@ app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
   res.json({ message: 'Company verified successfully', company });
 });
 
+// Cancel / Remove Company Partnership Route (Admin only)
 app.delete('/api/admin/companies/:id', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
