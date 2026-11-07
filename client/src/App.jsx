@@ -3,7 +3,6 @@ import {
   Briefcase, 
   Building2, 
   ShieldCheck, 
-  UserCheck, 
   Search, 
   PlusCircle, 
   LogOut, 
@@ -21,7 +20,6 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   
-  // Navigation tabs for student workspace
   const [activeTab, setActiveTab] = useState('browse');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -61,7 +59,6 @@ export default function App() {
     }
   ];
 
-  // Handle Login
   const handleLogin = (e) => {
     e.preventDefault();
     setLoginError('');
@@ -73,7 +70,7 @@ export default function App() {
     } else if (email === 'admin@localconnect.gov.ph' && password === 'password123') {
       setCurrentUser({ name: 'Placement Coordinator', role: 'admin', email });
     } else {
-      setLoginError('Invalid credentials. Please use the demo accounts listed below.');
+      setLoginError('Invalid credentials. Use demo accounts listed below.');
     }
   };
 
@@ -84,7 +81,7 @@ export default function App() {
   };
 
   // -------------------------------------------------------------
-  // 1. LOGIN SCREEN (Logged Out State)
+  // LOGIN SCREEN
   // -------------------------------------------------------------
   if (!currentUser) {
     return (
@@ -97,7 +94,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900 leading-none">Local Connect</h1>
-              <p className="text-xs text-slate-500 font-medium mt-1">Capstone Portal Sign In</p>
+              <p className="text-xs text-slate-500 font-medium mt-1">CapStone Portal Sign In</p>
             </div>
           </div>
 
@@ -140,7 +137,6 @@ export default function App() {
             </button>
           </form>
 
-          {/* Quick Demo Credentials helper */}
           <div className="mt-8 pt-6 border-t border-slate-100 text-xs text-slate-500">
             <p className="font-bold text-slate-700 mb-2">Quick Demo Accounts (Password: password123):</p>
             <ul className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/60 font-mono text-[11px]">
@@ -156,12 +152,12 @@ export default function App() {
   }
 
   // -------------------------------------------------------------
-  // 2. MAIN LOGGED-IN PORTAL WRAPPER
+  // DASHBOARDS
   // -------------------------------------------------------------
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
       
-      {/* Universal Top Header */}
+      {/* Top Navigation */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -190,19 +186,15 @@ export default function App() {
         </div>
       </header>
 
-      {/* ---------------------------------------------------------
-          STUDENT DASHBOARD UI
-      --------------------------------------------------------- */}
+      {/* STUDENT DASHBOARD */}
       {currentUser.role === 'student' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          
-          {/* Hero Banner */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 sm:p-10 text-white shadow-xl shadow-blue-500/10 mb-8">
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Welcome back, {currentUser.name}!
             </h2>
             <p className="mt-2 text-blue-100 text-sm">
-              Explore verified local OJT internships and career placements tailored for IT students.
+              Explore verified local OJT internships and career placements.
             </p>
 
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
@@ -222,7 +214,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Grid Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <aside className="lg:col-span-1">
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm sticky top-24">
@@ -303,9 +294,7 @@ export default function App() {
         </main>
       )}
 
-      {/* ---------------------------------------------------------
-          EMPLOYER DASHBOARD UI
-      --------------------------------------------------------- */}
+      {/* EMPLOYER DASHBOARD */}
       {currentUser.role === 'employer' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-8">
@@ -337,9 +326,7 @@ export default function App() {
         </main>
       )}
 
-      {/* ---------------------------------------------------------
-          ADMIN DASHBOARD UI
-      --------------------------------------------------------- */}
+      {/* ADMIN DASHBOARD */}
       {currentUser.role === 'admin' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
