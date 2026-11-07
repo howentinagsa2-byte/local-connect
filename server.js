@@ -172,3 +172,52 @@ app.patch('/api/admin/companies/:id/verify', (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Local Connect Backend running on port ${PORT}`));
 const API_BASE_URL = "https://local-connect-api-t9jx.onrender.com";
+const cors = require('cors');
+
+app.use(cors({
+  origin: [
+    'https://local-connect.vercel.app', // Replace with your exact Vercel live URL
+    'http://localhost:5173'
+  ],
+  credentials: true
+}));
+const express = require('express');
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+
+const app = express();
+app.use(express.json());
+app.use(cors({ origin: '*' }));
+
+const JWT_SECRET = 'local_connect_secret_key_2026';
+
+// Mock DB users for testing demo
+const users = [
+  { id: '1', email: 'student@icct.edu.ph', password: 'password123', role: 'student', name: 'Owen (Student)' },
+  { id: '2', email: 'hr@techsolutions.com', password: 'password123', role: 'employer', name: 'TechSolutions HR' },
+  { id: '3', email: 'admin@localconnect.gov.ph', password: 'password123', role: 'admin', name: 'Placement Coordinator' }
+];
+
+// Login Endpoint
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+  const user = users.find(u => u.email === email && u.password === password);
+
+  if (!user) {
+    return res.status(401).json({ message: 'Invalid email or password' });
+  }
+
+  const token = jwt.sign(
+    { userId: user.id, role: user.role, name: user.name, email: user.email },
+    JWT_SECRET,
+    { expiresIn: '8h' }
+  );
+
+  res.json({
+    token,
+    user: { id: user.id, name: user.name, email: user.email, role: user.role }
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
