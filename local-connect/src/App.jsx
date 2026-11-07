@@ -1,6 +1,6 @@
-// src/App.jsx - Complete Full-Stack Frontend (Local Connect Capstone)
+// src/App.jsx - Complete Full-Stack Frontend with Hours Tracker controls
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, EyeOff, Download, Mail, Bell, Settings, Award, UserPlus, User } from 'lucide-react';
+import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, EyeOff, Download, Mail, Bell, Settings, Award, UserPlus, User, Plus, Minus } from 'lucide-react';
 
 const API_BASE = "https://local-connect-api-t9jx.onrender.com";
 
@@ -43,6 +43,9 @@ export default function App() {
   const [selectedType, setSelectedType] = useState('All');
   const [selectedJobForApp, setSelectedJobForApp] = useState(null);
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
+  
+  // Hours input state for student tracker
+  const [hoursInput, setHoursInput] = useState('');
   
   // New Job form state for Admin Panel
   const [newJob, setNewJob] = useState({
@@ -187,6 +190,31 @@ export default function App() {
     if (!rememberMe) setEmail('');
   };
 
+  const handleModifyHours = async (isAdd) => {
+    const val = parseInt(hoursInput);
+    if (!val || val <= 0) {
+      alert('Please enter a valid number of hours.');
+      return;
+    }
+    try {
+      const payload = isAdd ? { hoursToAdd: val } : { hoursToRemove: val };
+      const res = await fetch(`${API_BASE}/api/student/hours`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const updatedUser = { ...currentUser, completedHours: data.completedHours };
+        setCurrentUser(updatedUser);
+        localStorage.setItem('local_connect_user', JSON.stringify(updatedUser));
+        setHoursInput('');
+      }
+    } catch (err) {
+      alert('Failed to update hours.');
+    }
+  };
+
   const handleApplySubmit = async (e) => {
     e.preventDefault();
     if (!selectedJobForApp) return;
@@ -277,7 +305,7 @@ export default function App() {
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans text-slate-100">
-        <div className="max-w-md w-full bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-800 p-8">
+        <div className="max-w-md w-full bg-slate-900/85 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-800 p-8">
           <div className="flex items-center justify-center space-x-3 mb-6">
             <div className="bg-gradient-to-tr from-blue-600 to-indigo-500 text-white p-3 rounded-2xl shadow-lg shadow-blue-500/20"><Briefcase className="w-6 h-6" /></div>
             <div>
@@ -529,13 +557,32 @@ export default function App() {
               <div className="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-800">
                 <span className="text-xs font-bold text-slate-400 uppercase">Internship Progress</span>
                 <div className="flex items-baseline justify-between mt-2">
-                  <span className="text-2xl font-black text-white">{currentUser.completedHours || 120} <span className="text-xs font-normal text-slate-400">/ {currentUser.totalRequiredHours || 500} hrs</span></span>
-                  <span className="text-xs font-bold text-blue-400">{Math.round(((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%</span>
+                  <span className="text-2xl font-black text-white">{currentUser.completedHours || 0} <span className="text-xs font-normal text-slate-400">/ {currentUser.totalRequiredHours || 500} hrs</span></span>
+                  <span className="text-xs font-bold text-blue-400">{Math.round(((currentUser.completedHours || 0) / (currentUser.totalRequiredHours || 500)) * 100)}%</span>
                 </div>
                 <div className="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full" style={{ width: `${Math.min(100, ((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full" style={{ width: `${Math.min(100, ((currentUser.completedHours || 0) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
+                </div>
+
+                {/* Interactive Add/Remove Hours Controls */}
+                <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    min="1" 
+                    placeholder="Hours" 
+                    value={hoursInput} 
+                    onChange={(e) => setHoursInput(e.target.value)} 
+                    className="w-20 px-2.5 py-1.5 bg-slate-950 rounded-xl text-xs border border-slate-800 text-white outline-none focus:border-blue-500" 
+                  />
+                  <button onClick={() => handleModifyHours(true)} className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md shadow-emerald-600/20">
+                    <Plus className="w-3.5 h-3.5" /> Add
+                  </button>
+                  <button onClick={() => handleModifyHours(false)} className="flex-1 py-1.5 px-2 bg-red-600/80 hover:bg-red-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md shadow-red-600/20">
+                    <Minus className="w-3.5 h-3.5" /> Remove
+                  </button>
                 </div>
               </div>
+
               <div className="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
                 <div>
                   <span className="text-xs font-bold text-slate-400 uppercase">Active Applications</span>

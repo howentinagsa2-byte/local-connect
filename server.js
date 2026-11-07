@@ -1,4 +1,4 @@
-// server.js - Complete Full-Stack Express Backend (ES Module Syntax)
+// server.js - Complete Full-Stack Express Backend (ES Module Syntax with JSON file persistence)
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -26,6 +26,63 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const JWT_SECRET = 'local_connect_secret_key_2026';
+const DB_FILE = path.join(__dirname, 'database.json');
+
+// Persistent Database Load/Save Helpers
+const loadDb = () => {
+  if (!fs.existsSync(DB_FILE)) {
+    const initialDb = {
+      users: [
+        { id: '1', name: 'Owen (Student)', email: 'student@icct.edu.ph', password: 'password123', role: 'student', status: 'active', completedHours: 120, totalRequiredHours: 500 },
+        { id: '2', name: 'TechSolutions Inc.', email: 'hr@techsolutions.com', password: 'password123', role: 'employer', status: 'Verified' },
+        { id: '3', name: 'Placement Coordinator', email: 'admin@localnet.ph', password: 'password123', role: 'admin', status: 'active' }
+      ],
+      companies: [
+        { id: 1, employerId: '2', name: 'TechSolutions Inc.', industry: 'Information Technology', location: 'San Mateo, Rizal', status: 'Verified', dateApplied: '2026-09-01', email: 'hr@techsolutions.com' }
+      ],
+      jobs: [
+        {
+          id: 1,
+          employerId: '3',
+          companyName: 'TechSolutions Inc.',
+          title: 'Junior Software Engineer (OJT)',
+          category: 'IT / Web Dev',
+          type: 'OJT / Internship',
+          mode: 'On-site',
+          location: 'San Mateo, Rizal',
+          stipend: 'PHP 500 / day',
+          description: 'Seeking motivated IT students for full-stack web development internship using React and Node.js.',
+          posted: '2 days ago',
+          status: 'Active'
+        }
+      ],
+      applications: [
+        {
+          id: 101,
+          jobId: 1,
+          jobTitle: 'Junior Software Engineer (OJT)',
+          companyName: 'TechSolutions Inc.',
+          studentId: '1',
+          studentName: 'Owen (Student)',
+          studentEmail: 'student@icct.edu.ph',
+          appliedDate: '2026-10-10',
+          status: 'Interview Scheduled',
+          resumeUrl: '/uploads/sample_resume.pdf'
+        }
+      ],
+      notifications: [
+        { id: 1, recipientEmail: 'student@icct.edu.ph', subject: 'Application Status Update', body: 'Your application for Junior Software Engineer (OJT) has been updated to: Interview Scheduled.', timestamp: '10:28 AM', read: false }
+      ]
+    };
+    fs.writeFileSync(DB_FILE, JSON.stringify(initialDb, null, 2));
+    return initialDb;
+  }
+  return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+};
+
+const saveDb = (data) => {
+  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+};
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
@@ -39,52 +96,6 @@ const upload = multer({
     else cb(new Error('Only PDF resumes and image files are allowed!'), false);
   }
 });
-
-let db = {
-  users: [
-    { id: '1', name: 'Owen (Student)', email: 'student@icct.edu.ph', password: 'password123', role: 'student', status: 'active', completedHours: 120, totalRequiredHours: 500 },
-    { id: '2', name: 'TechSolutions Inc.', email: 'hr@techsolutions.com', password: 'password123', role: 'employer', status: 'Verified' },
-    { id: '3', name: 'Placement Coordinator', email: 'admin@localnet.ph', password: 'password123', role: 'admin', status: 'active' }
-  ],
-  companies: [
-    { id: 1, employerId: '2', name: 'TechSolutions Inc.', industry: 'Information Technology', location: 'San Mateo, Rizal', status: 'Verified', dateApplied: '2026-09-01', email: 'hr@techsolutions.com' },
-    { id: 2, employerId: '4', name: 'Apex Logistics & Transport', industry: 'Logistics', location: 'Antipolo City', status: 'Pending Review', dateApplied: '2026-10-12', email: 'apex@logistics.com' },
-    { id: 3, employerId: '5', name: 'Greenfield Health Systems', industry: 'Healthcare', location: 'Marikina City', status: 'Pending Review', dateApplied: '2026-10-14', email: 'hr@greenfield.com' }
-  ],
-  jobs: [
-    {
-      id: 1,
-      employerId: '3',
-      companyName: 'TechSolutions Inc.',
-      title: 'Junior Software Engineer (OJT)',
-      category: 'IT / Web Dev',
-      type: 'OJT / Internship',
-      mode: 'On-site',
-      location: 'San Mateo, Rizal',
-      stipend: 'PHP 500 / day',
-      description: 'Seeking motivated IT students for full-stack web development internship using React and Node.js.',
-      posted: '2 days ago',
-      status: 'Active'
-    }
-  ],
-  applications: [
-    {
-      id: 101,
-      jobId: 1,
-      jobTitle: 'Junior Software Engineer (OJT)',
-      companyName: 'TechSolutions Inc.',
-      studentId: '1',
-      studentName: 'Owen (Student)',
-      studentEmail: 'student@icct.edu.ph',
-      appliedDate: '2026-10-10',
-      status: 'Interview Scheduled',
-      resumeUrl: '/uploads/sample_resume.pdf'
-    }
-  ],
-  notifications: [
-    { id: 1, recipientEmail: 'student@icct.edu.ph', subject: 'Application Status Update', body: 'Your application for Junior Software Engineer (OJT) has been updated to: Interview Scheduled.', timestamp: '10:28 AM', read: false }
-  ]
-};
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -100,6 +111,7 @@ const authenticateToken = (req, res, next) => {
 
 // User Registration
 app.post('/api/auth/register', (req, res) => {
+  const db = loadDb();
   const { name, email, password, role } = req.body;
   if (!name || !email || !password || !role) {
     return res.status(400).json({ error: 'All fields are required.' });
@@ -126,6 +138,7 @@ app.post('/api/auth/register', (req, res) => {
   };
 
   db.users.push(newUser);
+  saveDb(db);
 
   const token = jwt.sign(
     { userId: newUser.id, role: newUser.role, name: newUser.name, email: newUser.email },
@@ -147,8 +160,9 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
-// Partner Company Application (Requires Admin Approval Before Login)
+// Partner Company Application
 app.post('/api/auth/partner-apply', (req, res) => {
+  const db = loadDb();
   const { name, industry, location, email, password } = req.body;
   if (!name || !industry || !location || !email || !password) {
     return res.status(400).json({ error: 'All partnership fields are required.' });
@@ -171,11 +185,13 @@ app.post('/api/auth/partner-apply', (req, res) => {
     email,
     password
   });
+  saveDb(db);
 
   res.status(201).json({ message: 'Partnership application submitted successfully! Please wait for admin approval before logging in.' });
 });
 
 app.post('/api/auth/login', (req, res) => {
+  const db = loadDb();
   const { email, password } = req.body;
   
   let user = db.users.find(u => u.email === email && u.password === password);
@@ -195,6 +211,7 @@ app.post('/api/auth/login', (req, res) => {
       };
       if (!db.users.find(u => u.email === email)) {
         db.users.push({ ...user, password: company.password });
+        saveDb(db);
       }
     }
   }
@@ -222,21 +239,25 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 app.post('/api/auth/forgot-password', (req, res) => {
+  const db = loadDb();
   const { email, newPassword } = req.body;
   const user = db.users.find(u => u.email === email);
   if (!user) {
     const comp = db.companies.find(c => c.email === email);
     if (comp) {
       comp.password = newPassword;
+      saveDb(db);
       return res.json({ message: 'Password updated successfully! You can now sign in once approved.' });
     }
     return res.status(404).json({ error: 'Email address not found in our system.' });
   }
   user.password = newPassword;
+  saveDb(db);
   res.json({ message: 'Password updated successfully! You can now sign in with your new password.' });
 });
 
 app.patch('/api/auth/profile', authenticateToken, (req, res) => {
+  const db = loadDb();
   const { name, email, newPassword } = req.body;
   const user = db.users.find(u => u.id === req.user.userId);
   if (!user) return res.status(404).json({ error: 'User not found.' });
@@ -249,6 +270,7 @@ app.patch('/api/auth/profile', authenticateToken, (req, res) => {
 
   if (name) user.name = name;
   if (newPassword) user.password = newPassword;
+  saveDb(db);
 
   const newToken = jwt.sign(
     { userId: user.id, role: user.role, name: user.name, email: user.email },
@@ -270,40 +292,46 @@ app.patch('/api/auth/profile', authenticateToken, (req, res) => {
   });
 });
 
+// Student Hours Tracker Route (Supports Add / Remove Hours)
 app.patch('/api/student/hours', authenticateToken, (req, res) => {
+  const db = loadDb();
   if (req.user.role !== 'student') return res.status(403).json({ error: 'Unauthorized' });
-  const { hoursToAdd, targetHours } = req.body;
+  const { hoursToAdd, hoursToRemove, targetHours } = req.body;
   const user = db.users.find(u => u.id === req.user.userId);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
+  if (user.completedHours === undefined) user.completedHours = 120;
+  if (user.totalRequiredHours === undefined) user.totalRequiredHours = 500;
+
   if (hoursToAdd !== undefined) {
-    user.completedHours = (user.completedHours || 120) + parseInt(hoursToAdd || 0);
+    user.completedHours += parseInt(hoursToAdd || 0);
+  }
+  if (hoursToRemove !== undefined) {
+    user.completedHours = Math.max(0, user.completedHours - parseInt(hoursToRemove || 0));
   }
   if (targetHours !== undefined) {
     user.totalRequiredHours = parseInt(targetHours);
   }
 
-  res.json({ message: 'Hours updated successfully', completedHours: user.completedHours, totalRequiredHours: user.totalRequiredHours });
+  saveDb(db);
+
+  res.json({ 
+    message: 'Hours updated successfully', 
+    completedHours: user.completedHours, 
+    totalRequiredHours: user.totalRequiredHours 
+  });
 });
 
-app.get('/api/jobs', (req, res) => res.json(db.jobs));
+app.get('/api/jobs', (req, res) => {
+  const db = loadDb();
+  res.json(db.jobs);
+});
 
 app.post('/api/jobs', authenticateToken, (req, res) => {
+  const db = loadDb();
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
   
-  const { 
-    title, 
-    companyName, 
-    category, 
-    type, 
-    mode, 
-    location, 
-    stipend, 
-    description,
-    jobTitle, 
-    company 
-  } = req.body;
-
+  const { title, companyName, category, type, mode, location, stipend, description, jobTitle, company } = req.body;
   const resolvedTitle = title || jobTitle;
   const resolvedCompany = companyName || company || 'Admin Official Posting';
 
@@ -327,23 +355,28 @@ app.post('/api/jobs', authenticateToken, (req, res) => {
   };
 
   db.jobs.unshift(newJob);
+  saveDb(db);
   res.status(201).json({ message: 'Job posted successfully', job: newJob });
 });
 
 app.delete('/api/jobs/:id', authenticateToken, (req, res) => {
+  const db = loadDb();
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
   const jobId = parseInt(req.params.id);
   const jobIndex = db.jobs.findIndex(j => j.id === jobId);
   if (jobIndex === -1) return res.status(404).json({ error: 'Job not found' });
   db.jobs.splice(jobIndex, 1);
+  saveDb(db);
   res.json({ message: 'Job deleted successfully' });
 });
 
 app.get('/api/applications/student', authenticateToken, (req, res) => {
+  const db = loadDb();
   res.json(db.applications.filter(a => a.studentId === req.user.userId));
 });
 
 app.post('/api/applications', authenticateToken, upload.single('resume'), (req, res) => {
+  const db = loadDb();
   const { jobId } = req.body;
   const targetJob = db.jobs.find(j => j.id === parseInt(jobId));
   if (!targetJob) return res.status(404).json({ error: 'Job not found' });
@@ -374,12 +407,17 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
     });
   }
 
+  saveDb(db);
   res.status(201).json({ message: 'Application submitted', application: newApp });
 });
 
-app.get('/api/applications/employer', authenticateToken, (req, res) => res.json(db.applications));
+app.get('/api/applications/employer', authenticateToken, (req, res) => {
+  const db = loadDb();
+  res.json(db.applications);
+});
 
 app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
+  const db = loadDb();
   const { status } = req.body;
   const appItem = db.applications.find(a => a.id === parseInt(req.params.id));
   if (!appItem) return res.status(404).json({ error: 'Application not found' });
@@ -394,20 +432,25 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
     read: false
   });
 
+  saveDb(db);
   res.json({ message: 'Status updated and notification dispatched', application: appItem });
 });
 
 app.get('/api/notifications', authenticateToken, (req, res) => {
+  const db = loadDb();
   res.json(db.notifications.filter(n => n.recipientEmail === req.user.email));
 });
 
 app.patch('/api/notifications/:id/read', authenticateToken, (req, res) => {
+  const db = loadDb();
   const notif = db.notifications.find(n => n.id === parseInt(req.params.id));
   if (notif) notif.read = true;
+  saveDb(db);
   res.json({ message: 'Notification marked as read' });
 });
 
 app.get('/api/admin/export-csv', authenticateToken, (req, res) => {
+  const db = loadDb();
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
   let csvContent = "Application ID,Student Name,Student Email,Job Title,Company,Applied Date,Status\n";
   db.applications.forEach(app => {
@@ -418,12 +461,17 @@ app.get('/api/admin/export-csv', authenticateToken, (req, res) => {
   res.send(csvContent);
 });
 
-app.get('/api/admin/companies', authenticateToken, (req, res) => res.json(db.companies));
+app.get('/api/admin/companies', authenticateToken, (req, res) => {
+  const db = loadDb();
+  res.json(db.companies);
+});
 
 app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
+  const db = loadDb();
   const company = db.companies.find(c => c.id === parseInt(req.params.id));
   if (!company) return res.status(404).json({ error: 'Company not found' });
   company.status = 'Verified';
+  saveDb(db);
   res.json({ message: 'Company verified successfully', company });
 });
 
