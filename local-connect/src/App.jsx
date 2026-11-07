@@ -1,3 +1,4 @@
+// src/App.jsx - Complete Full-Stack Frontend (Local Connect Capstone)
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, EyeOff, Download, Mail, Bell, Settings, Award, UserPlus, User } from 'lucide-react';
 
@@ -42,6 +43,19 @@ export default function App() {
   const [selectedType, setSelectedType] = useState('All');
   const [selectedJobForApp, setSelectedJobForApp] = useState(null);
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
+  
+  // New Job form state for Admin Panel
+  const [newJob, setNewJob] = useState({
+    title: '',
+    companyName: '',
+    category: 'IT / Web Dev',
+    type: 'OJT / Internship',
+    mode: 'On-site',
+    location: 'San Mateo, Rizal',
+    stipend: 'PHP 500 / day',
+    description: ''
+  });
+
   const [resumeFile, setResumeFile] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -288,7 +302,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Auth Mode Toggle Tabs */}
           {authMode !== 'forgot' && (
             <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 mb-6">
               <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all ${authMode === 'login' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Sign In</button>
@@ -521,232 +534,257 @@ export default function App() {
         </div>
       )}
 
-      {currentUser.role === 'student' && (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-8 sm:p-10 text-white shadow-xl shadow-blue-500/10 mb-8 relative overflow-hidden">
-            <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-white/5 backdrop-blur-3xl transform skew-x-12 pointer-events-none"></div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Welcome back, {currentUser.name}!</h2>
-            <p className="mt-2 text-blue-100 text-sm">Discover verified local internships and entry-level positions tailored for IT students.</p>
-          </div>
-
-          {/* OJT Hours Tracker Card */}
-          <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl mb-8">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-6">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Award className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">OJT Internship Progress</span>
+      {/* Main Workspace Navigation */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {currentUser.role === 'student' && (
+          <div className="space-y-6">
+            {/* OJT Progress Tracker Banner */}
+            <div className="bg-gradient-to-r from-blue-950/60 to-indigo-950/60 border border-blue-900/40 rounded-3xl p-6 shadow-xl backdrop-blur-md">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-white">OJT Hours Tracker</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Track your completed internship hours toward graduation requirements.</p>
                 </div>
-                <h3 className="text-lg font-extrabold text-white">Select Required Program Target</h3>
+                <div className="flex items-center gap-2 bg-slate-900/80 px-4 py-2 rounded-2xl border border-slate-800">
+                  <span className="text-xs font-semibold text-slate-300">Target Hours:</span>
+                  <select 
+                    value={currentUser.totalRequiredHours || 500} 
+                    onChange={(e) => updateTargetHours(e.target.value)}
+                    className="bg-slate-950 text-blue-400 font-bold text-xs rounded-xl px-2 py-1 border border-slate-800 outline-none"
+                  >
+                    <option value="243">243 Hours</option>
+                    <option value="400">400 Hours</option>
+                    <option value="500">500 Hours</option>
+                    <option value="600">600 Hours</option>
+                  </select>
+                </div>
               </div>
-              
-              <div className="flex items-center bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shadow-inner">
-                {[243, 400, 600].map((tier) => {
-                  const isActive = (currentUser.totalRequiredHours || 500) === tier;
-                  return (
-                    <button
-                      key={tier}
-                      onClick={() => updateTargetHours(tier)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
-                        isActive ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 scale-105' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-                      }`}
-                    >
-                      {tier} Hours
-                    </button>
-                  );
-                })}
+
+              {/* Progress Bar Calculation */}
+              <div className="w-full bg-slate-900 rounded-full h-4 overflow-hidden border border-slate-800 p-0.5">
+                <div 
+                  className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full transition-all duration-500" 
+                  style={{ width: `${Math.min(100, ((currentUser.completedHours || 0) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between items-center mt-2 text-xs font-semibold text-slate-300">
+                <span>Completed: <strong className="text-blue-400">{currentUser.completedHours || 0} hrs</strong></span>
+                <span>Remaining: <strong className="text-indigo-400">{Math.max(0, (currentUser.totalRequiredHours || 500) - (currentUser.completedHours || 0))} hrs</strong></span>
+                <span>Target: <strong className="text-white">{currentUser.totalRequiredHours || 500} hrs</strong></span>
               </div>
             </div>
 
-            <div className="bg-slate-950/80 rounded-2xl p-5 border border-slate-800/80">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-bold text-blue-400">{currentUser.completedHours || 120} / {currentUser.totalRequiredHours || 500} Hours Completed</span>
-                <span className="text-xs font-bold text-slate-400">{Math.min(100, Math.round(((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100))}% Finished</span>
+            {/* Student Navigation Tabs */}
+            <div className="flex space-x-2 border-b border-slate-800 pb-2">
+              <button onClick={() => setActiveTab('browse')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'browse' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Browse OJT Listings</button>
+              <button onClick={() => setActiveTab('applications')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'applications' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>My Applications ({applications.length})</button>
+            </div>
+
+            {activeTab === 'browse' && (
+              <>
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search OJT postings by title, company, or location..." className="w-full pl-11 pr-4 py-3 bg-slate-900 rounded-2xl border border-slate-800 text-xs text-slate-100 outline-none focus:border-blue-500" />
+                  </div>
+                  <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="px-4 py-3 bg-slate-900 rounded-2xl border border-slate-800 text-xs text-slate-300 outline-none">
+                    <option value="All">All Categories</option>
+                    <option value="IT / Web Dev">IT / Web Dev</option>
+                    <option value="Logistics">Logistics</option>
+                    <option value="Healthcare">Healthcare</option>
+                  </select>
+                  <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)} className="px-4 py-3 bg-slate-900 rounded-2xl border border-slate-800 text-xs text-slate-300 outline-none">
+                    <option value="All">All Types</option>
+                    <option value="OJT / Internship">OJT / Internship</option>
+                    <option value="Part-time">Part-time</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredJobs.length === 0 ? (
+                    <div className="col-span-2 text-center py-12 text-slate-500 text-xs">No OJT listings match your search criteria.</div>
+                  ) : (
+                    filteredJobs.map(job => (
+                      <div key={job.id} className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl hover:border-slate-700 transition-all flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-950 text-blue-400 border border-blue-900/50">{job.category}</span>
+                            <span className="text-xs text-slate-500">{job.posted}</span>
+                          </div>
+                          <h4 className="text-base font-bold text-white mb-1">{job.title}</h4>
+                          <p className="text-xs font-medium text-slate-400 mb-3 flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5 text-indigo-400" /><span>{job.companyName}</span></p>
+                          <div className="flex flex-wrap gap-2 mb-4 text-[11px] text-slate-300">
+                            <span className="bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 flex items-center gap-1"><MapPin className="w-3 h-3 text-red-400" />{job.location}</span>
+                            <span className="bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 flex items-center gap-1"><Clock className="w-3 h-3 text-amber-400" />{job.type} ({job.mode})</span>
+                            <span className="bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 flex items-center gap-1"><DollarSign className="w-3 h-3 text-emerald-400" />{job.stipend}</span>
+                          </div>
+                          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4">{job.description}</p>
+                        </div>
+                        <button onClick={() => setSelectedJobForApp(job)} className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/25 transition-all">Apply for OJT Position</button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+
+            {activeTab === 'applications' && (
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <h3 className="text-sm font-bold text-white mb-4">My Submitted Applications</h3>
+                {applications.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-8">You haven't applied to any OJT listings yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {applications.map(app => (
+                      <div key={app.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                          <h4 className="text-sm font-bold text-white">{app.jobTitle}</h4>
+                          <p className="text-xs text-slate-400">{app.companyName} • Applied on {app.appliedDate}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${app.status === 'Interview Scheduled' ? 'bg-emerald-950 text-emerald-400 border-emerald-900' : 'bg-amber-950 text-amber-400 border-amber-900'}`}>
+                            {app.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="w-full bg-slate-900 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-800">
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-500 shadow-lg shadow-blue-500/50" style={{ width: `${Math.min(100, ((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
+            )}
+          </div>
+        )}
+
+        {currentUser.role === 'employer' && (
+          <div className="space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h3 className="text-base font-bold text-white">Partner Employer Dashboard</h3>
+                  <p className="text-xs text-slate-400">Review student applicants and manage OJT placement pipelines.</p>
+                </div>
               </div>
-              <div className="flex justify-end mt-4">
-                <button 
-                  onClick={async () => {
-                    const hours = prompt("Enter hours to log (e.g., 8):", "8");
-                    if (!hours || isNaN(hours)) return;
-                    try {
-                      const res = await fetch(`${API_BASE}/api/student/hours`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ hoursToAdd: hours })
-                      });
-                      if (res.ok) {
-                        const data = await res.json();
-                        const updatedUser = { ...currentUser, completedHours: data.completedHours, totalRequiredHours: data.totalRequiredHours };
-                        setCurrentUser(updatedUser);
-                        localStorage.setItem('local_connect_user', JSON.stringify(updatedUser));
-                        alert('Hours logged successfully!');
-                      }
-                    } catch (err) {}
-                  }}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-blue-600/20"
-                >
-                  + Log Daily Hours
+
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Incoming Student Applications</h4>
+              {applications.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center py-8">No applications received yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {applications.map(app => (
+                    <div key={app.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div>
+                        <h5 className="text-sm font-bold text-white">{app.studentName}</h5>
+                        <p className="text-xs text-slate-400">{app.studentEmail} • Applied for <strong className="text-blue-400">{app.jobTitle}</strong></p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select 
+                          value={app.status} 
+                          onChange={(e) => handleUpdateAppStatus(app.id, e.target.value)}
+                          className="px-3 py-1.5 bg-slate-900 text-xs text-slate-200 rounded-xl border border-slate-800 outline-none"
+                        >
+                          <option value="Under Review">Under Review</option>
+                          <option value="Interview Scheduled">Interview Scheduled</option>
+                          <option value="Accepted">Accepted</option>
+                          <option value="Rejected">Rejected</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {currentUser.role === 'admin' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center bg-slate-900 p-6 rounded-3xl border border-slate-800">
+              <div>
+                <h3 className="text-lg font-bold text-white">Admin Control Panel</h3>
+                <p className="text-xs text-slate-400">Manage partner company approvals, system job listings, and placement reports.</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setIsPostJobOpen(true)} className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/25">
+                  <PlusCircle className="w-4 h-4" /><span>Post Official Job</span>
+                </button>
+                <button onClick={handleExportCSV} className="flex items-center space-x-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs border border-slate-700">
+                  <Download className="w-4 h-4" /><span>Export CSV Report</span>
                 </button>
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <aside className="lg:col-span-1 space-y-6">
-              <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl p-5 border border-slate-800 shadow-xl sticky top-24">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">Navigation</h3>
-                <nav className="space-y-1 mb-6">
-                  <button onClick={() => setActiveTab('browse')} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'browse' ? 'bg-blue-950/60 text-blue-400 font-semibold border border-blue-900/50' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}><div className="flex items-center space-x-3"><Search className="w-4 h-4" /><span>Browse Jobs</span></div><ChevronRight className="w-4 h-4 opacity-50" /></button>
-                  <button onClick={() => setActiveTab('applications')} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'applications' ? 'bg-blue-950/60 text-blue-400 font-semibold border border-blue-900/50' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}><div className="flex items-center space-x-3"><FileText className="w-4 h-4" /><span>My Applications</span></div><ChevronRight className="w-4 h-4 opacity-50" /></button>
-                </nav>
-              </div>
-            </aside>
-            <section className="lg:col-span-3">
-              {activeTab === 'browse' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {filteredJobs.map((job) => (
-                    <div key={job.id} className="bg-slate-900/90 backdrop-blur-xl rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-col justify-between hover:border-slate-700 transition-all">
-                      <div>
-                        <h4 className="text-base font-bold text-white">{job.title}</h4>
-                        <p className="text-xs text-slate-400 mt-1">{job.companyName} • {job.location}</p>
-                        <p className="text-xs text-slate-300 mt-3 leading-relaxed">{job.description}</p>
-                      </div>
-                      <div className="pt-4 border-t border-slate-800 flex items-center justify-between mt-4">
-                        <span className="text-sm font-bold text-emerald-400">{job.stipend}</span>
-                        <button onClick={() => setSelectedJobForApp(job)} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-md shadow-blue-600/20">Apply Now</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {activeTab === 'applications' && (
-                <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-800 p-6 shadow-xl">
-                  <h3 className="text-base font-bold text-white mb-4">My Submitted Applications</h3>
-                  {applications.map(app => (
-                    <div key={app.id} className="py-4 flex items-center justify-between border-b border-slate-800/80">
-                      <div>
-                        <h4 className="text-sm font-bold text-white">{app.jobTitle}</h4>
-                        <p className="text-xs text-slate-400">{app.companyName} • Status: <strong className="text-blue-400">{app.status}</strong></p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
-        </main>
-      )}
-
-      {currentUser.role === 'employer' && (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-white">Employer Recruitment Hub</h2>
-          </div>
-
-          <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
-            <div className="px-6 py-4 border-b border-slate-800 bg-slate-950 font-bold text-sm text-slate-200">Manage Applicant Statuses & Resumes</div>
-            <div className="divide-y divide-slate-800">
-              {applications.length === 0 ? (
-                <p className="text-xs text-slate-500 py-6 text-center">No applicants yet.</p>
-              ) : (
-                applications.map(appItem => (
-                  <div key={appItem.id} className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                      <h4 className="font-bold text-white text-sm">{appItem.studentName}</h4>
-                      <p className="text-xs text-slate-400">Applied for: <strong className="text-slate-200">{appItem.jobTitle}</strong> ({appItem.studentEmail})</p>
-                      <p className="text-xs text-slate-500 mt-1">Status: <span className="font-semibold text-blue-400">{appItem.status}</span></p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <a href={`${API_BASE}${appItem.resumeUrl}`} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-blue-950/60 hover:bg-blue-900 text-blue-400 border border-blue-900/50 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5" /> View Resume</a>
-                      <button onClick={() => handleUpdateAppStatus(appItem.id, 'Interview Scheduled')} className="px-3 py-1.5 bg-purple-950/60 hover:bg-purple-900 text-purple-400 border border-purple-900/50 rounded-xl text-xs font-semibold transition-colors">Schedule Interview</button>
-                      <button onClick={() => handleUpdateAppStatus(appItem.id, 'Accepted')} className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 border border-emerald-900/50 rounded-xl text-xs font-semibold transition-colors">Accept</button>
-                    </div>
-                  </div>
-                ))
-              )}
+            <div className="flex space-x-2 border-b border-slate-800 pb-2">
+              <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Partner Applications ({companies.length})</button>
+              <button onClick={() => setAdminTab('jobs')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'jobs' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Manage Job Listings ({jobs.length})</button>
             </div>
-          </div>
-        </main>
-      )}
 
-      {currentUser.role === 'admin' && (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-            <div>
-              <h2 className="text-2xl font-bold text-white">Admin Control Panel</h2>
-              <p className="text-xs text-slate-400 mt-1">Approve partner companies and manage platform job listings.</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={() => setIsPostJobOpen(true)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-lg shadow-emerald-600/20"><PlusCircle className="w-4 h-4" /><span>Post Opening</span></button>
-              <button onClick={handleExportCSV} className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-lg shadow-purple-600/20"><Download className="w-4 h-4" /><span>Export CSV</span></button>
-            </div>
-          </div>
-
-          <div className="flex space-x-2 mb-6 border-b border-slate-800 pb-4">
-            <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-900 text-slate-400 hover:text-white'}`}>Partner Company Requests ({companies.length})</button>
-            <button onClick={() => setAdminTab('listings')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'listings' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-900 text-slate-400 hover:text-white'}`}>Platform Job Listings ({jobs.length})</button>
-          </div>
-
-          {adminTab === 'companies' && (
-            <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
-              <div className="px-6 py-4 border-b border-slate-800 bg-slate-950 font-bold text-sm text-slate-200">Partner Company Applications & Approvals</div>
-              <div className="divide-y divide-slate-800">
-                {companies.map(comp => (
-                  <div key={comp.id} className="p-5 flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-white text-sm">{comp.name}</h4>
-                      <p className="text-xs text-slate-400">{comp.industry} • {comp.location} • Email: {comp.email || 'N/A'} • Status: <strong className={comp.status === 'Verified' ? 'text-emerald-400' : 'text-amber-400'}>{comp.status}</strong></p>
-                    </div>
-                    {comp.status !== 'Verified' && (
-                      <button onClick={() => handleVerifyCompany(comp.id)} className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 border border-emerald-900/50 text-xs font-semibold rounded-xl transition-colors">Approve & Unlock Account</button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {adminTab === 'listings' && (
-            <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
-              <div className="px-6 py-4 border-b border-slate-800 bg-slate-950 font-bold text-sm text-slate-200">All Published Platform Job Listings</div>
-              <div className="divide-y divide-slate-800">
-                {jobs.length === 0 ? (
-                  <p className="text-xs text-slate-500 py-6 text-center">No listings published yet.</p>
+            {adminTab === 'companies' && (
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <h4 className="text-sm font-bold text-white mb-4">Partner Company Verification Queue</h4>
+                {companies.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-8">No partner applications submitted.</p>
                 ) : (
-                  jobs.map(job => (
-                    <div key={job.id} className="p-5 flex items-center justify-between">
-                      <div>
-                        <h4 className="font-bold text-white text-sm">{job.title}</h4>
-                        <p className="text-xs text-slate-400">{job.companyName} • {job.location} • <strong className="text-emerald-400">{job.stipend}</strong></p>
+                  <div className="space-y-3">
+                    {companies.map(c => (
+                      <div key={c.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex justify-between items-center">
+                        <div>
+                          <h5 className="text-sm font-bold text-white">{c.name}</h5>
+                          <p className="text-xs text-slate-400">{c.industry} • {c.location} • {c.email}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${c.status === 'Verified' ? 'bg-emerald-950 text-emerald-400 border-emerald-900' : 'bg-amber-950 text-amber-400 border-amber-900'}`}>
+                            {c.status}
+                          </span>
+                          {c.status !== 'Verified' && (
+                            <button onClick={() => handleVerifyCompany(c.id)} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs">Verify & Approve</button>
+                          )}
+                        </div>
                       </div>
-                      <button onClick={() => handleDeleteJob(job.id)} className="px-3 py-1.5 bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-900/50 text-xs font-semibold rounded-xl flex items-center space-x-1 transition-colors"><Trash2 className="w-3.5 h-3.5" /><span>Delete</span></button>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
-            </div>
-          )}
-        </main>
-      )}
+            )}
 
+            {adminTab === 'jobs' && (
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <h4 className="text-sm font-bold text-white mb-4">Active System Job Listings</h4>
+                {jobs.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-8">No job listings found.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {jobs.map(j => (
+                      <div key={j.id} className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex justify-between items-center">
+                        <div>
+                          <h5 className="text-sm font-bold text-white">{j.title}</h5>
+                          <p className="text-xs text-slate-400">{j.companyName} • {j.location} • {j.type}</p>
+                        </div>
+                        <button onClick={() => handleDeleteJob(j.id)} className="p-2 rounded-xl bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-900 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* Application Modal */}
       {selectedJobForApp && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-800">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-white">Apply to {selectedJobForApp.companyName}</h3>
+              <h3 className="text-base font-bold text-white">Apply for {selectedJobForApp.title}</h3>
               <button onClick={() => setSelectedJobForApp(null)} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
             </div>
+            <p className="text-xs text-slate-400 mb-4">Company: <strong className="text-slate-200">{selectedJobForApp.companyName}</strong></p>
             <form onSubmit={handleApplySubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">Position</label>
-                <input type="text" disabled value={selectedJobForApp.title} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-300 font-semibold border border-slate-800" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">Upload Resume (PDF)</label>
-                <input type="file" accept=".pdf,image/*" onChange={(e) => setResumeFile(e.target.files[0])} className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-950 file:text-blue-400 hover:file:bg-blue-900" />
+                <label className="block text-xs font-bold text-slate-400 mb-2">Upload Resume / CV (PDF)</label>
+                <input type="file" accept=".pdf" onChange={(e) => setResumeFile(e.target.files[0])} className="w-full text-xs text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
               </div>
               <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/25">Submit Application</button>
             </form>
@@ -754,37 +792,48 @@ export default function App() {
         </div>
       )}
 
+      {/* Admin Post Job Modal */}
       {isPostJobOpen && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-800 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-white">Post New Internship / Job Opening</h3>
+              <h3 className="text-base font-bold text-white">Post New Job Listing</h3>
               <button onClick={() => setIsPostJobOpen(false)} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
             </div>
             <form onSubmit={handlePostJobSubmit} className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">Job Title</label>
-                <input type="text" required value={newJob.title} onChange={(e) => setNewJob({...newJob, title: e.target.value})} placeholder="e.g. Junior Web Developer OJT" className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-100 outline-none focus:border-blue-500" />
+                <input type="text" required value={newJob.title} onChange={(e) => setNewJob({ ...newJob, title: e.target.value })} placeholder="e.g. Junior Web Developer" className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">Company Name</label>
-                <input type="text" required value={newJob.companyName} onChange={(e) => setNewJob({...newJob, companyName: e.target.value})} placeholder="e.g. TechSolutions Inc." className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-100 outline-none focus:border-blue-500" />
+                <input type="text" required value={newJob.companyName} onChange={(e) => setNewJob({ ...newJob, companyName: e.target.value })} placeholder="e.g. TechSolutions Inc." className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Category</label>
+                  <input type="text" required value={newJob.category} onChange={(e) => setNewJob({ ...newJob, category: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Type</label>
+                  <input type="text" required value={newJob.type} onChange={(e) => setNewJob({ ...newJob, type: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-400 mb-1">Location</label>
-                  <input type="text" required value={newJob.location} onChange={(e) => setNewJob({...newJob, location: e.target.value})} placeholder="e.g. San Mateo, Rizal" className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-100 outline-none focus:border-blue-500" />
+                  <input type="text" required value={newJob.location} onChange={(e) => setNewJob({ ...newJob, location: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">Stipend / Allowance</label>
-                  <input type="text" required value={newJob.stipend} onChange={(e) => setNewJob({...newJob, stipend: e.target.value})} placeholder="e.g. PHP 500 / day" className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-100 outline-none focus:border-blue-500" />
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Stipend</label>
+                  <input type="text" required value={newJob.stipend} onChange={(e) => setNewJob({ ...newJob, stipend: e.target.value })} className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 mb-1">Description</label>
-                <textarea rows="3" required value={newJob.description} onChange={(e) => setNewJob({...newJob, description: e.target.value})} placeholder="Job description and requirements..." className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-100 outline-none focus:border-blue-500 resize-none"></textarea>
+                <textarea required rows={4} value={newJob.description} onChange={(e) => setNewJob({ ...newJob, description: e.target.value })} placeholder="Enter job description..." className="w-full px-3.5 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500 resize-none"></textarea>
               </div>
-              <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/25 mt-2">Publish Opening</button>
+              <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-blue-600/25">Publish Job Listing</button>
             </form>
           </div>
         </div>

@@ -178,17 +178,14 @@ app.post('/api/auth/partner-apply', (req, res) => {
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   
-  // Check users table first
   let user = db.users.find(u => u.email === email && u.password === password);
   
   if (!user) {
-    // Check if trying to log in as an employer whose company was verified
     const company = db.companies.find(c => c.email === email && c.password === password);
     if (company) {
       if (company.status !== 'Verified') {
         return res.status(403).json({ error: 'Your partnership application is still Pending Review by admin.' });
       }
-      // Auto-register into users if approved
       user = {
         id: company.employerId,
         name: company.name,
@@ -291,17 +288,46 @@ app.patch('/api/student/hours', authenticateToken, (req, res) => {
 
 app.get('/api/jobs', (req, res) => res.json(db.jobs));
 
+// Enhanced Job Posting Endpoint supporting flexible keys from frontend state
 app.post('/api/jobs', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
-  const { title, companyName, category, type, mode, location, stipend, description } = req.body;
+  
+  const { 
+    title, 
+    companyName, 
+    category, 
+    type, 
+    mode, 
+    location, 
+    stipend, 
+    description,
+    // Support alternate property names if sent from different form states (e.g. newJob object fields)
+    jobTitle, 
+    company 
+  } = req.body;
+
+  const resolvedTitle = title || jobTitle;
+  const resolvedCompany = companyName || company || 'Admin Official Posting';
+
+  if (!resolvedTitle || !description) {
+    return res.status(400).json({ error: 'Job title and description are required fields.' });
+  }
+
   const newJob = {
     id: Date.now(),
     employerId: req.user.userId,
-    companyName: companyName || 'Admin Official Posting',
-    title, category, type, mode, location, stipend, description,
+    companyName: resolvedCompany,
+    title: resolvedTitle,
+    category: category || 'General / OJT',
+    type: type || 'OJT / Internship',
+    mode: mode || 'On-site',
+    location: location || 'Philippines',
+    stipend: stipend || 'Unpaid / Negotiable',
+    description,
     posted: 'Just now',
     status: 'Active'
   };
+
   db.jobs.unshift(newJob);
   res.status(201).json({ message: 'Job posted successfully', job: newJob });
 });
@@ -403,5 +429,5 @@ app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
   res.json({ message: 'Company verified successfully', company });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.5 || process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
