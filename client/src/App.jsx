@@ -197,6 +197,51 @@ export default function App() {
               </div>
             </div>
           </div>
+
+          {/* OJT Hours Progress Tracker Card */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="w-full">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">OJT Internship Progress</span>
+                <span className="text-xs font-bold text-blue-600">
+                  {currentUser.completedHours || 120} / {currentUser.totalRequiredHours || 500} Hours Logged
+                </span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-blue-600 h-full rounded-full transition-all duration-500" 
+                  style={{ width: `${((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            <button 
+              onClick={async () => {
+                const hours = prompt("Enter hours to add (e.g., 8):", "8");
+                if (!hours) return;
+                try {
+                  const res = await fetch(`${API_BASE}/api/student/hours`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ hoursToAdd: hours })
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    const updatedUser = { ...currentUser, completedHours: data.completedHours };
+                    setCurrentUser(updatedUser);
+                    localStorage.setItem('local_connect_user', JSON.stringify(updatedUser));
+                    alert('Hours updated successfully!');
+                  }
+                } catch (err) {
+                  alert('Failed to update hours.');
+                }
+              }}
+              className="whitespace-nowrap px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition-colors shadow-sm"
+            >
+              + Log Daily Hours
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <aside className="lg:col-span-1 space-y-6">
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm sticky top-24">
