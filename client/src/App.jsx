@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Briefcase, 
   Building2, 
@@ -10,78 +10,256 @@ import {
   Users, 
   MapPin, 
   Clock, 
-  DollarSign,
-  ChevronRight
+  DollarSign, 
+  ChevronRight, 
+  CheckCircle, 
+  X, 
+  Upload, 
+  Filter, 
+  Eye, 
+  Check, 
+  AlertCircle 
 } from 'lucide-react';
 
+const API_BASE = "https://local-connect-api-t9jx.onrender.com";
+
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('local_connect_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('local_connect_token') || '');
+
+  // Auth Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Data States
   const [activeTab, setActiveTab] = useState('browse');
+  const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedType, setSelectedType] = useState('All');
 
-  const jobListings = [
-    {
-      id: 1,
-      title: "Junior Software Engineer (OJT)",
-      company: "TechSolutions Inc.",
-      location: "San Mateo, Rizal",
-      type: "OJT / Internship",
-      mode: "On-site",
-      stipend: "PHP 500 / day",
-      description: "Seeking motivated IT students for full-stack web development internship using React and Node.js.",
-      posted: "2 days ago"
-    },
-    {
-      id: 2,
-      title: "Administrative Assistant OJT",
-      company: "Metro Health Center",
-      location: "Marikina City",
-      type: "OJT / Internship",
-      mode: "Hybrid",
-      stipend: "PHP 400 / day",
-      description: "Assist municipal health records management, document processing, and patient coordination.",
-      posted: "1 day ago"
-    },
-    {
-      id: 3,
-      title: "Data Entry Analyst",
-      company: "Global Logistics Corp",
-      location: "Antipolo City",
-      type: "Full-time Job",
-      mode: "Remote",
-      stipend: "PHP 18,000 / month",
-      description: "Manage local transport schedules, route optimization logs, and database entry updates.",
-      posted: "Just now"
+  // Modal States
+  const [selectedJobForApp, setSelectedJobForApp] = useState(null);
+  const [isPostJobOpen, setIsPostJobOpen] = useState(false);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [newJob, setNewJob] = useState({
+    title: '',
+    companyName: '',
+    category: 'IT / Web Dev',
+    type: 'OJT / Internship',
+    mode: 'On-site',
+    location: '',
+    stipend: '',
+    description: ''
+  });
+
+  // Fetch initial job listings
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  // Fetch role-specific data on login
+  useEffect(() => {
+    if (currentUser && token) {
+      if (currentUser.role === 'student') fetchStudentApplications();
+      if (currentUser.role === 'employer') fetchEmployerApplications();
+      if (currentUser.role === 'admin') fetchAdminCompanies();
     }
-  ];
+  }, [currentUser, token]);
 
-  const handleLogin = (e) => {
-    e.preventDefault();
+  const fetchJobs = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/jobs`);
+      if (res.ok) {
+        const data = await res.json();
+        setJobs(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch jobs:", err);
+    }
+  };
+
+  const fetchStudentApplications = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/applications/student`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setApplications(await res.json());
+    } catch (err) {
+      console.error("Failed to fetch applications:", err);
+    }
+  };
+
+  const fetchEmployerApplications = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/applications/employer`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setApplications(await res.json());
+    } catch (err) {
+      console.error("Failed to fetch applicant data:", err);
+    }
+  };
+
+  const fetchAdminCompanies = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/companies`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setCompanies(await res.json());
+    } catch (err) {
+      console.error("Failed to fetch companies:", err);
+    }
+  };
+
+  // Login Handler
+  const handleLogin = async (e, demoEmail = null, demoPass = null) => {
+    if (e) e.preventDefault();
     setLoginError('');
+    setIsSubmitting(true);
 
-    if (email === 'student@icct.edu.ph' && password === 'password123') {
-      setCurrentUser({ name: 'Owen', role: 'student', email });
-    } else if (email === 'hr@techsolutions.com' && password === 'password123') {
-      setCurrentUser({ name: 'TechSolutions HR', role: 'employer', email });
-    } else if (email === 'admin@localconnect.gov.ph' && password === 'password123') {
-      setCurrentUser({ name: 'Placement Coordinator', role: 'admin', email });
-    } else {
-      setLoginError('Invalid credentials. Use demo accounts listed below.');
+    const loginPayload = {
+      email: demoEmail || email,
+      password: demoPass || password
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginPayload)
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setCurrentUser(data.user);
+        setToken(data.token);
+        localStorage.setItem('local_connect_user', JSON.stringify(data.user));
+        localStorage.setItem('local_connect_token', data.token);
+      } else {
+        setLoginError(data.error || 'Login failed.');
+      }
+    } catch (err) {
+      setLoginError('Could not connect to backend server. Make sure server.js is running.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
+    setToken('');
+    localStorage.removeItem('local_connect_user');
+    localStorage.removeItem('local_connect_token');
     setEmail('');
     setPassword('');
   };
 
+  // Apply for Job Handler
+  const handleApplySubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedJobForApp) return;
+
+    const formData = new FormData();
+    formData.append('jobId', selectedJobForApp.id);
+    if (resumeFile) formData.append('resume', resumeFile);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/applications`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+
+      if (res.ok) {
+        alert('Application submitted successfully!');
+        setSelectedJobForApp(null);
+        setResumeFile(null);
+        fetchStudentApplications();
+      }
+    } catch (err) {
+      alert('Failed to submit application.');
+    }
+  };
+
+  // Post Job Handler
+  const handlePostJobSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_BASE}/api/jobs`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(newJob)
+      });
+
+      if (res.ok) {
+        alert('OJT Listing posted successfully!');
+        setIsPostJobOpen(false);
+        fetchJobs();
+      }
+    } catch (err) {
+      alert('Failed to post new job.');
+    }
+  };
+
+  // Status Change Handler (Employer)
+  const handleUpdateAppStatus = async (appId, newStatus) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/applications/${appId}/status`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (res.ok) {
+        fetchEmployerApplications();
+      }
+    } catch (err) {
+      alert('Failed to update applicant status.');
+    }
+  };
+
+  // Company Verification Handler (Admin)
+  const handleVerifyCompany = async (companyId) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/companies/${companyId}/verify`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        fetchAdminCompanies();
+      }
+    } catch (err) {
+      alert('Failed to verify company.');
+    }
+  };
+
+  // Filtering Logic
+  const filteredJobs = jobs.filter(j => {
+    const matchesSearch = j.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          j.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          j.location.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || j.category === selectedCategory;
+    const matchesType = selectedType === 'All' || j.type === selectedType;
+    return matchesSearch && matchesCategory && matchesType;
+  });
+
   // -------------------------------------------------------------
-  // LOGIN SCREEN
+  // 1. SIGN IN SCREEN
   // -------------------------------------------------------------
   if (!currentUser) {
     return (
@@ -99,8 +277,9 @@ export default function App() {
           </div>
 
           {loginError && (
-            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold border border-red-100 text-center">
-              {loginError}
+            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold border border-red-100 text-center flex items-center justify-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              <span>{loginError}</span>
             </div>
           )}
 
@@ -131,19 +310,44 @@ export default function App() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-md shadow-blue-500/20 text-sm mt-2"
+              disabled={isSubmitting}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-md shadow-blue-500/20 text-sm mt-2 disabled:opacity-50"
             >
-              Sign In to Portal
+              {isSubmitting ? 'Authenticating...' : 'Sign In to Portal'}
             </button>
           </form>
 
+          {/* Quick Demo Autofill Switcher */}
           <div className="mt-8 pt-6 border-t border-slate-100 text-xs text-slate-500">
-            <p className="font-bold text-slate-700 mb-2">Quick Demo Accounts (Password: password123):</p>
-            <ul className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/60 font-mono text-[11px]">
-              <li><strong className="text-blue-600">Student:</strong> student@icct.edu.ph</li>
-              <li><strong className="text-emerald-600">Employer:</strong> hr@techsolutions.com</li>
-              <li><strong className="text-purple-600">Admin:</strong> admin@localconnect.gov.ph</li>
-            </ul>
+            <p className="font-bold text-slate-700 mb-2">Click to Quick-Login Demo Accounts:</p>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => handleLogin(null, 'student@icct.edu.ph', 'password123')}
+                className="w-full p-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-left font-mono text-[11px] font-semibold transition-colors flex justify-between items-center"
+              >
+                <span>Student: student@icct.edu.ph</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleLogin(null, 'hr@techsolutions.com', 'password123')}
+                className="w-full p-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl text-left font-mono text-[11px] font-semibold transition-colors flex justify-between items-center"
+              >
+                <span>Employer: hr@techsolutions.com</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleLogin(null, 'admin@localconnect.gov.ph', 'password123')}
+                className="w-full p-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-xl text-left font-mono text-[11px] font-semibold transition-colors flex justify-between items-center"
+              >
+                <span>Admin: admin@localconnect.gov.ph</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
         </div>
@@ -152,16 +356,16 @@ export default function App() {
   }
 
   // -------------------------------------------------------------
-  // DASHBOARDS
+  // 2. MAIN WORKSPACE WRAPPER
   // -------------------------------------------------------------
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
       
-      {/* Top Navigation */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+      {/* Top Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 text-white p-2 rounded-xl">
+            <div className="bg-blue-600 text-white p-2 rounded-xl shadow-md shadow-blue-500/20">
               <Briefcase className="w-5 h-5" />
             </div>
             <div>
@@ -186,7 +390,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* STUDENT DASHBOARD */}
+      {/* STUDENT ROLE */}
       {currentUser.role === 'student' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 sm:p-10 text-white shadow-xl shadow-blue-500/10 mb-8">
@@ -194,7 +398,7 @@ export default function App() {
               Welcome back, {currentUser.name}!
             </h2>
             <p className="mt-2 text-blue-100 text-sm">
-              Explore verified local OJT internships and career placements.
+              Discover verified local internships and entry-level positions tailored for IT students.
             </p>
 
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
@@ -204,23 +408,18 @@ export default function App() {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search openings by title, skill, or company..."
+                  placeholder="Search openings by title, skill, or location..."
                   className="w-full pl-11 pr-4 py-3 bg-white text-slate-900 rounded-2xl shadow-sm border-0 focus:ring-2 focus:ring-blue-300 text-sm placeholder:text-slate-400"
                 />
               </div>
-              <button className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-2xl text-sm font-semibold transition-all shadow-md">
-                Search Jobs
-              </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <aside className="lg:col-span-1">
+            <aside className="lg:col-span-1 space-y-6">
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm sticky top-24">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">
-                  Student Navigation
-                </h3>
-                <nav className="space-y-1">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">Navigation</h3>
+                <nav className="space-y-1 mb-6">
                   <button
                     onClick={() => setActiveTab('browse')}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
@@ -242,104 +441,193 @@ export default function App() {
                   >
                     <div className="flex items-center space-x-3">
                       <FileText className="w-4 h-4" />
-                      <span>My Applications</span>
+                      <span>My Applications ({applications.length})</span>
                     </div>
                     <ChevronRight className="w-4 h-4 opacity-50" />
                   </button>
                 </nav>
+
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2 flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5" /> Filters
+                </h3>
+                
+                <div className="space-y-3 px-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Category</label>
+                    <select 
+                      value={selectedCategory} 
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="w-full text-xs p-2 bg-slate-50 rounded-lg border border-slate-200 outline-none"
+                    >
+                      <option value="All">All Categories</option>
+                      <option value="IT / Web Dev">IT / Web Dev</option>
+                      <option value="Administrative">Administrative</option>
+                      <option value="Data & Analytics">Data & Analytics</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Job Type</label>
+                    <select 
+                      value={selectedType} 
+                      onChange={(e) => setSelectedType(e.target.value)}
+                      className="w-full text-xs p-2 bg-slate-50 rounded-lg border border-slate-200 outline-none"
+                    >
+                      <option value="All">All Types</option>
+                      <option value="OJT / Internship">OJT / Internship</option>
+                      <option value="Full-time Job">Full-time Job</option>
+                    </select>
+                  </div>
+                </div>
               </div>
             </aside>
 
-            <section className="lg:col-span-3 space-y-5">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-bold text-slate-900">
-                  Featured Opportunities ({jobListings.length})
-                </h3>
-                <span className="text-xs text-slate-500">Sorted by most recent</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {jobListings.map((job) => (
-                  <div key={job.id} className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full border border-blue-100">
-                          {job.type}
-                        </span>
-                        <span className="text-xs text-slate-400 flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {job.posted}
-                        </span>
-                      </div>
-                      <h4 className="text-base font-bold text-slate-900">{job.title}</h4>
-                      <div className="flex items-center space-x-2 text-xs text-slate-500 mt-1 mb-3">
-                        <span className="font-semibold text-slate-700">{job.company}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</span>
-                      </div>
-                      <p className="text-xs text-slate-600 line-clamp-2 mb-4">{job.description}</p>
-                    </div>
-                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
-                      <span className="text-sm font-bold text-emerald-600 flex items-center gap-0.5">
-                        <DollarSign className="w-3.5 h-3.5" /> {job.stipend}
-                      </span>
-                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm">
-                        Apply Now
-                      </button>
-                    </div>
+            <section className="lg:col-span-3">
+              {activeTab === 'browse' ? (
+                <div className="space-y-5">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Featured Opportunities ({filteredJobs.length})
+                    </h3>
+                    <span className="text-xs text-slate-500">Sorted by most recent</span>
                   </div>
-                ))}
-              </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {filteredJobs.map((job) => (
+                      <div key={job.id} className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full border border-blue-100">
+                              {job.type}
+                            </span>
+                            <span className="text-xs text-slate-400 flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> {job.posted}
+                            </span>
+                          </div>
+                          <h4 className="text-base font-bold text-slate-900">{job.title}</h4>
+                          <div className="flex items-center space-x-2 text-xs text-slate-500 mt-1 mb-3">
+                            <span className="font-semibold text-slate-700">{job.companyName}</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location} ({job.mode})</span>
+                          </div>
+                          <p className="text-xs text-slate-600 line-clamp-2 mb-4 leading-relaxed">{job.description}</p>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100 flex items-center justify-between mt-auto">
+                          <span className="text-sm font-bold text-emerald-600 flex items-center gap-0.5">
+                            <DollarSign className="w-3.5 h-3.5" /> {job.stipend}
+                          </span>
+                          <button 
+                            onClick={() => setSelectedJobForApp(job)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition-colors"
+                          >
+                            Apply Now
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+                  <h3 className="text-base font-bold text-slate-900 mb-4">My Submitted Applications</h3>
+                  {applications.length === 0 ? (
+                    <p className="text-xs text-slate-500 py-6 text-center">No applications submitted yet.</p>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {applications.map(app => (
+                        <div key={app.id} className="py-4 flex items-center justify-between">
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-900">{app.jobTitle}</h4>
+                            <p className="text-xs text-slate-500 mt-0.5">{app.companyName} • Applied on {app.appliedDate}</p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            app.status === 'Hired' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                            app.status === 'Interview Scheduled' ? 'bg-purple-50 text-purple-600 border border-purple-100' :
+                            'bg-blue-50 text-blue-600 border border-blue-100'
+                          }`}>
+                            {app.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
           </div>
         </main>
       )}
 
-      {/* EMPLOYER DASHBOARD */}
+      {/* EMPLOYER ROLE */}
       {currentUser.role === 'employer' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-2xl font-bold text-slate-900">Employer Recruitment Hub</h2>
-              <p className="text-xs text-slate-500">Manage company OJT postings and review student applicants.</p>
+              <p className="text-xs text-slate-500 mt-1">Manage company OJT postings and review student applicants.</p>
             </div>
-            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-sm">
+            <button 
+              onClick={() => setIsPostJobOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-sm transition-colors"
+            >
               <PlusCircle className="w-4 h-4" />
               <span>Post New OJT Opening</span>
             </button>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-slate-900 text-sm">Active Postings & Applicants</h3>
-              <span className="text-xs bg-slate-100 px-2.5 py-1 rounded-lg text-slate-600 font-semibold">2 Active Listings</span>
-            </div>
-            <div className="divide-y divide-slate-100">
-              <div className="p-6 flex justify-between items-center">
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Junior Software Engineer (OJT)</h4>
-                  <p className="text-xs text-slate-500">Posted 2 days ago • 14 Applicants</p>
-                </div>
-                <button className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Review Applicants</button>
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 className="font-bold text-slate-900 text-sm">Active Candidate Applications</h3>
+                <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg font-semibold">{applications.length} Total Applicants</span>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {applications.map(appItem => (
+                  <div key={appItem.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <span className="text-xs text-blue-600 font-semibold">{appItem.jobTitle}</span>
+                      <h4 className="font-bold text-slate-900 text-base">{appItem.studentName}</h4>
+                      <p className="text-xs text-slate-500 mt-1">Email: {appItem.studentEmail} • Submitted {appItem.appliedDate}</p>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-bold px-3 py-1 bg-slate-100 rounded-lg text-slate-700 mr-2">{appItem.status}</span>
+                      <button 
+                        onClick={() => handleUpdateAppStatus(appItem.id, 'Interview Scheduled')}
+                        className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold rounded-xl transition-colors"
+                      >
+                        Interview
+                      </button>
+                      <button 
+                        onClick={() => handleUpdateAppStatus(appItem.id, 'Hired')}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm"
+                      >
+                        Hire OJT
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </main>
       )}
 
-      {/* ADMIN DASHBOARD */}
+      {/* ADMIN ROLE */}
       {currentUser.role === 'admin' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-slate-900">Placement Coordinator Admin Portal</h2>
-            <p className="text-xs text-slate-500">Monitor student OJT hours, placement verifications, and partner companies.</p>
+            <p className="text-xs text-slate-500 mt-1">Monitor student OJT hours, placement verifications, and partner companies.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
               <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Users className="w-6 h-6" /></div>
               <div>
                 <p className="text-xs text-slate-400 font-bold uppercase">Placed Students</p>
-                <h4 className="text-xl font-black text-slate-900">128</h4>
+                <h4 className="text-xl font-black text-slate-900">129</h4>
               </div>
             </div>
 
@@ -347,19 +635,219 @@ export default function App() {
               <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><Building2 className="w-6 h-6" /></div>
               <div>
                 <p className="text-xs text-slate-400 font-bold uppercase">Partner Companies</p>
-                <h4 className="text-xl font-black text-slate-900">34</h4>
+                <h4 className="text-xl font-black text-slate-900">{companies.length}</h4>
               </div>
             </div>
 
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
               <div className="p-3 bg-purple-50 text-purple-600 rounded-xl"><ShieldCheck className="w-6 h-6" /></div>
               <div>
-                <p className="text-xs text-slate-400 font-bold uppercase">Pending Verifications</p>
-                <h4 className="text-xl font-black text-slate-900">5</h4>
+                <p className="text-xs text-slate-400 font-bold uppercase">Pending Review</p>
+                <h4 className="text-xl font-black text-slate-900">{companies.filter(c => c.status !== 'Verified').length}</h4>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-xl"><CheckCircle className="w-6 h-6" /></div>
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase">Placement Rate</p>
+                <h4 className="text-xl font-black text-slate-900">92%</h4>
               </div>
             </div>
           </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-bold text-slate-900 text-sm">Employer Verification Queue</h3>
+              <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg font-semibold">{companies.length} Registered</span>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {companies.map((company) => (
+                <div key={company.id} className="p-6 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h4 className="font-bold text-slate-900 text-sm">{company.name}</h4>
+                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                        company.status === 'Verified' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                      }`}>
+                        {company.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">{company.industry} • {company.location}</p>
+                  </div>
+
+                  {company.status !== 'Verified' && (
+                    <button
+                      onClick={() => handleVerifyCompany(company.id)}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center space-x-1 shadow-sm transition-colors"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Approve Verification</span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </main>
+      )}
+
+      {/* -------------------------------------------------------------
+          MODALS
+      ------------------------------------------------------------- */}
+
+      {/* APPLY MODAL */}
+      {selectedJobForApp && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white max-w-md w-full rounded-3xl p-6 shadow-2xl border border-slate-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-slate-900">Submit Application</h3>
+              <button onClick={() => setSelectedJobForApp(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 mb-4">Applying for <strong className="text-slate-800">{selectedJobForApp.title}</strong> at {selectedJobForApp.companyName}</p>
+
+            <form onSubmit={handleApplySubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Upload Resume (PDF)</label>
+                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center bg-slate-50">
+                  <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                  <input 
+                    type="file" 
+                    accept="application/pdf"
+                    onChange={(e) => setResumeFile(e.target.files[0])}
+                    className="text-xs text-slate-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2">
+                <button 
+                  type="button"
+                  onClick={() => setSelectedJobForApp(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-500/20"
+                >
+                  Submit Resume
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* POST JOB MODAL */}
+      {isPostJobOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white max-w-lg w-full rounded-3xl p-6 shadow-2xl border border-slate-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-slate-900">Post New Opening</h3>
+              <button onClick={() => setIsPostJobOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePostJobSubmit} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Job Title</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={newJob.title}
+                  onChange={(e) => setNewJob({...newJob, title: e.target.value})}
+                  placeholder="e.g. Junior Web Developer OJT" 
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Category</label>
+                  <select 
+                    value={newJob.category}
+                    onChange={(e) => setNewJob({...newJob, category: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
+                  >
+                    <option value="IT / Web Dev">IT / Web Dev</option>
+                    <option value="Administrative">Administrative</option>
+                    <option value="Data & Analytics">Data & Analytics</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Job Type</label>
+                  <select 
+                    value={newJob.type}
+                    onChange={(e) => setNewJob({...newJob, type: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
+                  >
+                    <option value="OJT / Internship">OJT / Internship</option>
+                    <option value="Full-time Job">Full-time Job</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Location</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={newJob.location}
+                    onChange={(e) => setNewJob({...newJob, location: e.target.value})}
+                    placeholder="e.g. San Mateo, Rizal" 
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Stipend / Salary</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={newJob.stipend}
+                    onChange={(e) => setNewJob({...newJob, stipend: e.target.value})}
+                    placeholder="e.g. PHP 500 / day" 
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Description</label>
+                <textarea 
+                  rows="3" 
+                  required 
+                  value={newJob.description}
+                  onChange={(e) => setNewJob({...newJob, description: e.target.value})}
+                  placeholder="Describe internship requirements and responsibilities..." 
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setIsPostJobOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-md"
+                >
+                  Publish Listing
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
     </div>
