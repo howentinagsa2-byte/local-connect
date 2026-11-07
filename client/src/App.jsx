@@ -8,7 +8,11 @@ export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem('local_connect_token') || '');
   const [authMode, setAuthMode] = useState('login'); // 'login', 'register', 'partner', 'forgot'
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  
+  // Remember Me state initialization
+  const [email, setEmail] = useState(() => localStorage.getItem('remembered_email') || '');
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem('remembered_email'));
+
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [role, setRole] = useState('student');
@@ -112,6 +116,13 @@ export default function App() {
         });
         const data = await res.json();
         if (res.ok) {
+          if (authMode === 'login') {
+            if (rememberMe) {
+              localStorage.setItem('remembered_email', email);
+            } else {
+              localStorage.removeItem('remembered_email');
+            }
+          }
           setCurrentUser(data.user);
           setToken(data.token);
           localStorage.setItem('local_connect_user', JSON.stringify(data.user));
@@ -157,9 +168,9 @@ export default function App() {
     setToken('');
     localStorage.removeItem('local_connect_user');
     localStorage.removeItem('local_connect_token');
-    setEmail('');
     setPassword('');
     setName('');
+    if (!rememberMe) setEmail('');
   };
 
   const handleApplySubmit = async (e) => {
@@ -372,6 +383,14 @@ export default function App() {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                </div>
+
+                {/* Remember Me Checkbox */}
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <label className="flex items-center space-x-2 cursor-pointer text-slate-300">
+                    <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-blue-600 focus:ring-0 cursor-pointer" />
+                    <span>Remember Me</span>
+                  </label>
                 </div>
               </>
             )}
