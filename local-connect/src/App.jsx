@@ -1,4 +1,4 @@
-// src/App.jsx - Complete Full-Stack Frontend with Admin Job Edit Option & Persistence
+// src/App.jsx - Complete Full-Stack Frontend with Resume Viewer & Preset Hours Selection (243, 400, 600)
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, EyeOff, Download, Mail, Bell, Settings, Award, UserPlus, User, Plus, Minus } from 'lucide-react';
 
@@ -7,7 +7,7 @@ const API_BASE = "https://local-connect-api-t9jx.onrender.com";
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('local_connect_user')) || null);
   const [token, setToken] = useState(() => localStorage.getItem('local_connect_token') || '');
-  const [authMode, setAuthMode] = useState('login'); // 'login', 'register', 'partner', 'forgot'
+  const [authMode, setAuthMode] = useState('login');
   const [name, setName] = useState('');
   
   const [email, setEmail] = useState(() => localStorage.getItem('remembered_email') || '');
@@ -44,6 +44,9 @@ export default function App() {
   // Job Editing States
   const [editingJob, setEditingJob] = useState(null);
   const [isEditJobOpen, setIsEditJobOpen] = useState(false);
+  
+  // Resume Modal Preview State for Employers
+  const [viewingResumeUrl, setViewingResumeUrl] = useState(null);
   
   const [hoursInput, setHoursInput] = useState('');
   
@@ -186,10 +189,10 @@ export default function App() {
     if (!rememberMe) setEmail('');
   };
 
-  const handleModifyHours = async (isAdd) => {
-    const val = parseInt(hoursInput);
+  const handleModifyHours = async (isAdd, specificVal = null) => {
+    const val = specificVal !== null ? specificVal : parseInt(hoursInput);
     if (!val || val <= 0) {
-      alert('Please enter a valid number of hours.');
+      alert('Please enter or select a valid number of hours.');
       return;
     }
     try {
@@ -208,6 +211,24 @@ export default function App() {
       }
     } catch (err) {
       alert('Failed to update hours.');
+    }
+  };
+
+  const handleSetTargetHours = async (targetVal) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/student/hours`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ targetHours: targetVal })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const updatedUser = { ...currentUser, totalRequiredHours: data.totalRequiredHours };
+        setCurrentUser(updatedUser);
+        localStorage.setItem('local_connect_user', JSON.stringify(updatedUser));
+      }
+    } catch (err) {
+      alert('Failed to set target hours.');
     }
   };
 
@@ -588,7 +609,18 @@ export default function App() {
                   <div className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full" style={{ width: `${Math.min(100, ((currentUser.completedHours || 0) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center gap-2">
+                {/* Preset Required Hours Selectors (243, 400, 600) */}
+                <div className="mt-3 pt-3 border-t border-slate-800/80">
+                  <span className="block text-[11px] font-bold text-slate-400 mb-1.5">Required Hours Goal:</span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button onClick={() => handleSetTargetHours(243)} className={`py-1 text-[11px] font-bold rounded-lg border transition-all ${currentUser.totalRequiredHours === 243 ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'}`}>243 hrs</button>
+                    <button onClick={() => handleSetTargetHours(400)} className={`py-1 text-[11px] font-bold rounded-lg border transition-all ${currentUser.totalRequiredHours === 400 ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'}`}>400 hrs</button>
+                    <button onClick={() => handleSetTargetHours(600)} className={`py-1 text-[11px] font-bold rounded-lg border transition-all ${currentUser.totalRequiredHours === 600 ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'}`}>600 hrs</button>
+                  </div>
+                </div>
+
+                {/* Quick Add / Remove hours */}
+                <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center gap-2">
                   <input type="number" min="1" placeholder="Hours" value={hoursInput} onChange={(e) => setHoursInput(e.target.value)} className="w-20 px-2.5 py-1.5 bg-slate-950 rounded-xl text-xs border border-slate-800 text-white outline-none focus:border-blue-500" />
                   <button onClick={() => handleModifyHours(true)} className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md">
                     <Plus className="w-3.5 h-3.5" /> Add
@@ -640,7 +672,7 @@ export default function App() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredJobs.length === 0 ? (
-                    <div className="col-span-full py-12 text-center text-slate-500 text-xs">No matching OJT listings found.</div>
+                    <div className="col-span-full py-12 text-center text-slate-500 text-xs">No matching OJT listings found. Please ask your admin to post positions.</div>
                   ) : (
                     filteredJobs.map(job => (
                       <div key={job.id} className="bg-slate-900/70 backdrop-blur-md rounded-2xl border border-slate-800 p-6 flex flex-col justify-between hover:border-slate-700 transition-all">
@@ -714,6 +746,10 @@ export default function App() {
                         <p className="text-xs text-blue-400 mt-0.5">Applied for: {app.jobTitle}</p>
                       </div>
                       <div className="flex items-center space-x-3">
+                        {/* RESTORED VIEW RESUME BUTTON */}
+                        <button onClick={() => setViewingResumeUrl(`${API_BASE}${app.resumeUrl}`)} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-700">
+                          <FileText className="w-3.5 h-3.5 text-blue-400" /> View Resume
+                        </button>
                         <select value={app.status} onChange={(e) => handleUpdateAppStatus(app.id, e.target.value)} className="px-3 py-1.5 bg-slate-950 rounded-xl text-xs text-slate-200 border border-slate-800 outline-none">
                           <option value="Under Review">Under Review</option>
                           <option value="Interview Scheduled">Interview Scheduled</option>
@@ -751,23 +787,27 @@ export default function App() {
               <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">Company Partnership Approvals</div>
                 <div className="divide-y divide-slate-800">
-                  {companies.map(c => (
-                    <div key={c.id} className="p-5 flex items-center justify-between">
-                      <div>
-                        <h4 className="font-bold text-sm text-white">{c.name}</h4>
-                        <p className="text-xs text-slate-400">{c.industry} • {c.location} • {c.email}</p>
+                  {companies.length === 0 ? (
+                    <p className="p-6 text-center text-xs text-slate-500">No partner companies registered yet.</p>
+                  ) : (
+                    companies.map(c => (
+                      <div key={c.id} className="p-5 flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold text-sm text-white">{c.name}</h4>
+                          <p className="text-xs text-slate-400">{c.industry} • {c.location} • {c.email}</p>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${c.status === 'Verified' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' : 'bg-amber-950 text-amber-400 border border-amber-900'}`}>{c.status}</span>
+                          {c.status !== 'Verified' && (
+                            <button onClick={() => handleVerifyCompany(c.id)} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold cursor-pointer">Approve</button>
+                          )}
+                          <button onClick={() => handleCancelCompany(c.id)} className="px-3 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-900/50 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1">
+                            <Trash2 className="w-3.5 h-3.5" /> Cancel
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${c.status === 'Verified' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' : 'bg-amber-950 text-amber-400 border border-amber-900'}`}>{c.status}</span>
-                        {c.status !== 'Verified' && (
-                          <button onClick={() => handleVerifyCompany(c.id)} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold cursor-pointer">Approve</button>
-                        )}
-                        <button onClick={() => handleCancelCompany(c.id)} className="px-3 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-900/50 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1">
-                          <Trash2 className="w-3.5 h-3.5" /> Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -776,24 +816,48 @@ export default function App() {
               <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">Published OJT Positions</div>
                 <div className="divide-y divide-slate-800">
-                  {jobs.map(j => (
-                    <div key={j.id} className="p-5 flex items-center justify-between">
-                      <div>
-                        <h4 className="font-bold text-sm text-white">{j.title}</h4>
-                        <p className="text-xs text-slate-400">{j.companyName} • {j.location} • {j.stipend}</p>
+                  {jobs.length === 0 ? (
+                    <p className="p-6 text-center text-xs text-slate-500">No active job listings. Click "Post Official OJT Slot" above to add one.</p>
+                  ) : (
+                    jobs.map(j => (
+                      <div key={j.id} className="p-5 flex items-center justify-between">
+                        <div>
+                          <h4 className="font-bold text-sm text-white">{j.title}</h4>
+                          <p className="text-xs text-slate-400">{j.companyName} • {j.location} • {j.stipend}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button onClick={() => { setEditingJob(j); setIsEditJobOpen(true); }} className="px-3 py-1.5 bg-blue-950/60 hover:bg-blue-900 text-blue-400 rounded-xl border border-blue-900/50 text-xs font-bold transition-all">Edit</button>
+                          <button onClick={() => handleDeleteJob(j.id)} className="p-2 bg-red-950/60 hover:bg-red-900/80 text-red-400 rounded-xl border border-red-900/50 transition-all"><Trash2 className="w-4 h-4" /></button>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <button onClick={() => { setEditingJob(j); setIsEditJobOpen(true); }} className="px-3 py-1.5 bg-blue-950/60 hover:bg-blue-900 text-blue-400 rounded-xl border border-blue-900/50 text-xs font-bold transition-all">Edit</button>
-                        <button onClick={() => handleDeleteJob(j.id)} className="p-2 bg-red-950/60 hover:bg-red-900/80 text-red-400 rounded-xl border border-red-900/50 transition-all"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
           </div>
         )}
       </main>
+
+      {/* View Resume Modal for Employers */}
+      {viewingResumeUrl && (
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-800 flex flex-col h-[80vh]">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Student Resume Preview</h3>
+              <button onClick={() => setViewingResumeUrl(null)} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="flex-1 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
+              <iframe src={viewingResumeUrl} className="w-full h-full" title="Resume PDF Preview"></iframe>
+            </div>
+            <div className="flex justify-end pt-4">
+              <a href={viewingResumeUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg">
+                <Download className="w-4 h-4" /> Download PDF
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedJobForApp && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">

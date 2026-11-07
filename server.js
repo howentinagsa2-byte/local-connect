@@ -1,4 +1,4 @@
-// server.js - Complete Full-Stack Express Backend with Job Editing & Permanent JSON Persistence
+// server.js - Complete Full-Stack Express Backend
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -28,51 +28,16 @@ if (!fs.existsSync(uploadDir)) {
 const JWT_SECRET = 'local_connect_secret_key_2026';
 const DB_FILE = path.join(__dirname, 'database.json');
 
-// Persistent Database Load/Save Helpers
 const loadDb = () => {
   if (!fs.existsSync(DB_FILE)) {
     const initialDb = {
       users: [
-        { id: '1', name: 'Owen (Student)', email: 'student@icct.edu.ph', password: 'password123', role: 'student', status: 'active', completedHours: 120, totalRequiredHours: 500 },
-        { id: '2', name: 'TechSolutions Inc.', email: 'hr@techsolutions.com', password: 'password123', role: 'employer', status: 'Verified' },
         { id: '3', name: 'Placement Coordinator', email: 'admin@localnet.ph', password: 'password123', role: 'admin', status: 'active' }
       ],
-      companies: [
-        { id: 1, employerId: '2', name: 'TechSolutions Inc.', industry: 'Information Technology', location: 'San Mateo, Rizal', status: 'Verified', dateApplied: '2026-09-01', email: 'hr@techsolutions.com' }
-      ],
-      jobs: [
-        {
-          id: 1,
-          employerId: '3',
-          companyName: 'TechSolutions Inc.',
-          title: 'Junior Software Engineer (OJT)',
-          category: 'IT / Web Dev',
-          type: 'OJT / Internship',
-          mode: 'On-site',
-          location: 'San Mateo, Rizal',
-          stipend: 'PHP 500 / day',
-          description: 'Seeking motivated IT students for full-stack web development internship using React and Node.js.',
-          posted: '2 days ago',
-          status: 'Active'
-        }
-      ],
-      applications: [
-        {
-          id: 101,
-          jobId: 1,
-          jobTitle: 'Junior Software Engineer (OJT)',
-          companyName: 'TechSolutions Inc.',
-          studentId: '1',
-          studentName: 'Owen (Student)',
-          studentEmail: 'student@icct.edu.ph',
-          appliedDate: '2026-10-10',
-          status: 'Interview Scheduled',
-          resumeUrl: '/uploads/sample_resume.pdf'
-        }
-      ],
-      notifications: [
-        { id: 1, recipientEmail: 'student@icct.edu.ph', subject: 'Application Status Update', body: 'Your application for Junior Software Engineer (OJT) has been updated to: Interview Scheduled.', timestamp: '10:28 AM', read: false }
-      ]
+      companies: [],
+      jobs: [],
+      applications: [],
+      notifications: []
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(initialDb, null, 2));
     return initialDb;
@@ -109,7 +74,6 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Permanent Student Registration
 app.post('/api/auth/register', (req, res) => {
   const db = loadDb();
   const { name, email, password, role } = req.body;
@@ -147,7 +111,7 @@ app.post('/api/auth/register', (req, res) => {
   );
 
   res.status(201).json({
-    message: 'Account created and saved successfully',
+    message: 'Account created successfully',
     token,
     user: {
       id: newUser.id,
@@ -160,7 +124,6 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
-// Partner Company Application
 app.post('/api/auth/partner-apply', (req, res) => {
   const db = loadDb();
   const { name, industry, location, email, password } = req.body;
@@ -232,7 +195,7 @@ app.post('/api/auth/login', (req, res) => {
       name: user.name, 
       email: user.email, 
       role: user.role,
-      completedHours: user.completedHours || 120,
+      completedHours: user.completedHours || 0,
       totalRequiredHours: user.totalRequiredHours || 500
     }
   });
@@ -292,7 +255,6 @@ app.patch('/api/auth/profile', authenticateToken, (req, res) => {
   });
 });
 
-// Student Hours Tracker
 app.patch('/api/student/hours', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'student') return res.status(403).json({ error: 'Unauthorized' });
@@ -300,7 +262,7 @@ app.patch('/api/student/hours', authenticateToken, (req, res) => {
   const user = db.users.find(u => u.id === req.user.userId);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  if (user.completedHours === undefined) user.completedHours = 120;
+  if (user.completedHours === undefined) user.completedHours = 0;
   if (user.totalRequiredHours === undefined) user.totalRequiredHours = 500;
 
   if (hoursToAdd !== undefined) user.completedHours += parseInt(hoursToAdd || 0);
@@ -321,7 +283,6 @@ app.get('/api/jobs', (req, res) => {
   res.json(db.jobs);
 });
 
-// Admin-Only Job Postings
 app.post('/api/jobs', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'admin') {
@@ -353,7 +314,6 @@ app.post('/api/jobs', authenticateToken, (req, res) => {
   res.status(201).json({ message: 'Job posted successfully by Admin', job: newJob });
 });
 
-// Update Job Listing Route (Admin only)
 app.put('/api/jobs/:id', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'admin') {
