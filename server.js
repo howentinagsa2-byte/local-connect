@@ -98,10 +98,66 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+app.post('/api/auth/register', (req, res) => {
+  const { name, email, password, role } = req.body;
+  if (!name || !email || !password || !role) {
+    return res.status(400).json({ error: 'All fields are required.' });
+  }
+
+  const existingUser = db.users.find(u => u.email === email);
+  if (existingUser) {
+    return res.status(400).json({ error: 'Email is already registered.' });
+  }
+
+  const newUser = {
+    id: String(Date.now()),
+    name,
+    email,
+    password,
+    role,
+    status: role === 'employer' ? 'Pending Review' : 'active',
+    completedHours: role === 'student' ? 0 : undefined,
+    totalRequiredHours: role === 'student' ? 500 : undefined
+  };
+
+  db.users.push(newUser);
+
+  if (role === 'employer') {
+    db.companies.push({
+      id: Date.now(),
+      employerId: newUser.id,
+      name: name,
+      industry: 'General Services',
+      location: 'Local Region',
+      status: 'Pending Review',
+      dateApplied: new Date().toISOString().split('T')[0]
+    });
+  }
+
+  const token = jwt.sign(
+    { userId: newUser.id, role: newUser.role, name: newUser.name, email: newUser.email },
+    JWT_SECRET,
+    { expiresIn: '8h' }
+  );
+
+  res.status(201).json({
+    message: 'Account created successfully',
+    token,
+    user: {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      completedHours: newUser.completedHours || 0,
+      totalRequiredHours: newUser.totalRequiredHours || 500
+    }
+  });
+});
+
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   const user = db.users.find(u => u.email === email && u.password === password);
-  if (!user) return res.status(401).json({ error: 'Invalid credentials. Please use demo account details.' });
+  if (!user) return res.status(401).json({ error: 'Invalid credentials. Please check your email or password.' });
 
   const token = jwt.sign(
     { userId: user.id, role: user.role, name: user.name, email: user.email },

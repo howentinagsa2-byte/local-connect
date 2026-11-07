@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, Mail, Bell, Settings, Award } from 'lucide-react';
+import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, Mail, Bell, Settings, Award, UserPlus } from 'lucide-react';
 
 const API_BASE = "https://local-connect-api-t9jx.onrender.com";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('local_connect_user')) || null);
   const [token, setToken] = useState(() => localStorage.getItem('local_connect_token') || '');
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('student');
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('browse');
@@ -41,15 +44,20 @@ export default function App() {
   const fetchAdminCompanies = async () => { try { const res = await fetch(`${API_BASE}/api/admin/companies`, { headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) setCompanies(await res.json()); } catch (err) {} };
   const fetchNotifications = async () => { try { const res = await fetch(`${API_BASE}/api/notifications`, { headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) setNotifications(await res.json()); } catch (err) {} };
 
-  const handleLogin = async (e, demoEmail = null, demoPass = null) => {
-    if (e) e.preventDefault();
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
     setLoginError('');
     setIsSubmitting(true);
+    const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+    const payload = authMode === 'login' 
+      ? { email, password }
+      : { name, email, password, role };
+
     try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
+      const res = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: demoEmail || email, password: demoPass || password })
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (res.ok) {
@@ -58,7 +66,7 @@ export default function App() {
         localStorage.setItem('local_connect_user', JSON.stringify(data.user));
         localStorage.setItem('local_connect_token', data.token);
       } else {
-        setLoginError(data.error || 'Login failed.');
+        setLoginError(data.error || 'Authentication failed.');
       }
     } catch (err) {
       setLoginError('Could not connect to backend server.');
@@ -74,6 +82,7 @@ export default function App() {
     localStorage.removeItem('local_connect_token');
     setEmail('');
     setPassword('');
+    setName('');
   };
 
   const handleApplySubmit = async (e) => {
@@ -187,29 +196,45 @@ export default function App() {
             <div className="bg-gradient-to-tr from-blue-600 to-indigo-500 text-white p-3 rounded-2xl shadow-lg shadow-blue-500/20"><Briefcase className="w-6 h-6" /></div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-white leading-none">Local Connect</h1>
-              <p className="text-xs text-slate-400 font-medium mt-1">CapStone Portal Sign In</p>
+              <p className="text-xs text-slate-400 font-medium mt-1">CapStone Portal</p>
             </div>
           </div>
+
+          {/* Auth Mode Toggle Tabs */}
+          <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 mb-6">
+            <button onClick={() => { setAuthMode('login'); setLoginError(''); }} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${authMode === 'login' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Sign In</button>
+            <button onClick={() => { setAuthMode('register'); setLoginError(''); }} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${authMode === 'register' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Create Account</button>
+          </div>
+
           {loginError && <div className="mb-4 p-3 bg-red-950/60 text-red-400 rounded-xl text-xs font-semibold border border-red-900/50 text-center flex items-center justify-center gap-2"><AlertCircle className="w-4 h-4" /><span>{loginError}</span></div>}
-          <form onSubmit={handleLogin} className="space-y-4">
+          
+          <form onSubmit={handleAuthSubmit} className="space-y-4">
+            {authMode === 'register' && (
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name / Entity Name</label>
+                <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. John Doe / Tech Corp" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+              </div>
+            )}
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. student@icct.edu.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm outline-none text-slate-100 transition-all" />
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. student@icct.edu.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-sm outline-none text-slate-100 transition-all" />
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
             </div>
-            <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/25 text-sm mt-2 disabled:opacity-50">{isSubmitting ? 'Authenticating...' : 'Sign In to Portal'}</button>
+            {authMode === 'register' && (
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Account Role</label>
+                <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all">
+                  <option value="student">Student / Intern</option>
+                  <option value="employer">Employer / Partner Company</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+            )}
+            <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/25 text-sm mt-2 disabled:opacity-50">{isSubmitting ? 'Processing...' : (authMode === 'login' ? 'Sign In to Portal' : 'Register New Account')}</button>
           </form>
-          <div className="mt-8 pt-6 border-t border-slate-800/80 text-xs text-slate-400">
-            <p className="font-bold text-slate-300 mb-2.5">Click to Quick-Login Demo Accounts:</p>
-            <div className="space-y-2">
-              <button type="button" onClick={() => handleLogin(null, 'student@icct.edu.ph', 'password123')} className="w-full p-2.5 bg-blue-950/40 hover:bg-blue-900/50 border border-blue-900/40 text-blue-300 rounded-xl text-left font-mono text-[11px] font-semibold transition-colors flex justify-between items-center"><span>Student: student@icct.edu.ph</span><ChevronRight className="w-4 h-4" /></button>
-              <button type="button" onClick={() => handleLogin(null, 'hr@techsolutions.com', 'password123')} className="w-full p-2.5 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-900/40 text-emerald-300 rounded-xl text-left font-mono text-[11px] font-semibold transition-colors flex justify-between items-center"><span>Employer: hr@techsolutions.com</span><ChevronRight className="w-4 h-4" /></button>
-              <button type="button" onClick={() => handleLogin(null, 'admin@localconnect.gov.ph', 'password123')} className="w-full p-2.5 bg-purple-950/40 hover:bg-purple-900/50 border border-purple-900/40 text-purple-300 rounded-xl text-left font-mono text-[11px] font-semibold transition-colors flex justify-between items-center"><span>Admin: admin@localconnect.gov.ph</span><ChevronRight className="w-4 h-4" /></button>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -439,7 +464,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Admin Navigation Tabs */}
           <div className="flex space-x-2 mb-6 border-b border-slate-800 pb-4">
             <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-900 text-slate-400 hover:text-white'}`}>Partner Companies</button>
             <button onClick={() => setAdminTab('listings')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'listings' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-900 text-slate-400 hover:text-white'}`}>Platform Job Listings ({jobs.length})</button>
