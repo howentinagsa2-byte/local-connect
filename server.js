@@ -1,4 +1,4 @@
-// server.js - Complete Full-Stack Express Backend (ES Module Syntax with JSON file persistence)
+// server.js - Complete Full-Stack Express Backend with Email-Specific Notifications & Scoped Employer Applications
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -43,7 +43,7 @@ const loadDb = () => {
       jobs: [
         {
           id: 1,
-          employerId: '3',
+          employerId: '2',
           companyName: 'TechSolutions Inc.',
           title: 'Junior Software Engineer (OJT)',
           category: 'IT / Web Dev',
@@ -292,7 +292,7 @@ app.patch('/api/auth/profile', authenticateToken, (req, res) => {
   });
 });
 
-// Student Hours Tracker Route (Supports Add / Remove Hours)
+// Student Hours Tracker Route
 app.patch('/api/student/hours', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'student') return res.status(403).json({ error: 'Unauthorized' });
@@ -329,13 +329,12 @@ app.get('/api/jobs', (req, res) => {
 
 app.post('/api/jobs', authenticateToken, (req, res) => {
   const db = loadDb();
-  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+  if (req.user.role !== 'admin' && req.user.role !== 'employer') return res.status(403).json({ error: 'Unauthorized' });
   
-  const { title, companyName, category, type, mode, location, stipend, description, jobTitle, company } = req.body;
-  const resolvedTitle = title || jobTitle;
-  const resolvedCompany = companyName || company || 'Admin Official Posting';
+  const { title, companyName, category, type, mode, location, stipend, description } = req.body;
+  const resolvedCompany = req.user.role === 'employer' ? req.user.name : (companyName || 'Admin Official Posting');
 
-  if (!resolvedTitle || !description) {
+  if (!title || !description) {
     return res.status(400).json({ error: 'Job title and description are required fields.' });
   }
 
@@ -343,7 +342,7 @@ app.post('/api/jobs', authenticateToken, (req, res) => {
     id: Date.now(),
     employerId: req.user.userId,
     companyName: resolvedCompany,
-    title: resolvedTitle,
+    title,
     category: category || 'General / OJT',
     type: type || 'OJT / Internship',
     mode: mode || 'On-site',
@@ -361,11 +360,15 @@ app.post('/api/jobs', authenticateToken, (req, res) => {
 
 app.delete('/api/jobs/:id', authenticateToken, (req, res) => {
   const db = loadDb();
-  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
   const jobId = parseInt(req.params.id);
-  const jobIndex = db.jobs.findIndex(j => j.id === jobId);
-  if (jobIndex === -1) return res.status(404).json({ error: 'Job not found' });
-  db.jobs.splice(jobIndex, 1);
+  const job = db.jobs.find(j => j.id === jobId);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+
+  if (req.user.role !== 'admin' && job.employerId !== req.user.userId) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  db.jobs = db.jobs.filter(j => j.id !== jobId);
   saveDb(db);
   res.json({ message: 'Job deleted successfully' });
 });
@@ -395,13 +398,16 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
   };
   db.applications.unshift(newApp);
 
-  const employerUser = db.users.find(u => u.name === targetJob.companyName || u.role === 'employer');
-  if (employerUser) {
+  // Send notification ONLY to the specific employer email managing this company/job
+  const employerUser = db.users.find(u => u.name === targetJob.companyName || u.id === targetJob.employerId);
+  const employerEmail = employerUser ? employerUser.email : null;
+
+  if (employerEmail) {
     db.notifications.unshift({
       id: Date.now(),
-      recipientEmail: employerUser.email,
+      recipientEmail: employerEmail,
       subject: `New Application: ${targetJob.title}`,
-      body: `${req.user.name} submitted an application for ${targetJob.title}.`,
+      body: `${req.user.name} (${req.user.email}) submitted an application for ${targetJob.title}.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       read: false
     });
@@ -411,9 +417,22 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
   res.status(201).json({ message: 'Application submitted', application: newApp });
 });
 
+// Employer Applications: Strict filtering so employers only see applications for their own company
 app.get('/api/applications/employer', authenticateToken, (req, res) => {
   const db = loadDb();
-  res.json(db.applications);
+  if (req.user.role !== 'employer' && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  if (req.user.role === 'admin') {
+    return res.json(db.applications);
+  }
+
+  // Filter applications where companyName matches the logged-in employer's name or jobs posted by this employer
+  const employerJobs = db.jobs.filter(j => j.employerId === req.user.userId || j.companyName === req.user.name).map(j => j.id);
+  const filteredApps = db.applications.filter(a => a.companyName === req.user.name || employerJobs.includes(a.jobId));
+  
+  res.json(filteredApps);
 });
 
 app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
@@ -423,6 +442,8 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
   if (!appItem) return res.status(404).json({ error: 'Application not found' });
 
   appItem.status = status;
+
+  // Send notification strictly to the registered student email
   db.notifications.unshift({
     id: Date.now(),
     recipientEmail: appItem.studentEmail,
@@ -436,16 +457,21 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
   res.json({ message: 'Status updated and notification dispatched', application: appItem });
 });
 
+// Notifications strictly filtered by authenticated user's email
 app.get('/api/notifications', authenticateToken, (req, res) => {
   const db = loadDb();
-  res.json(db.notifications.filter(n => n.recipientEmail === req.user.email));
+  const userEmail = req.user.email;
+  const userNotifications = db.notifications.filter(n => n.recipientEmail === userEmail);
+  res.json(userNotifications);
 });
 
 app.patch('/api/notifications/:id/read', authenticateToken, (req, res) => {
   const db = loadDb();
   const notif = db.notifications.find(n => n.id === parseInt(req.params.id));
-  if (notif) notif.read = true;
-  saveDb(db);
+  if (notif && notif.recipientEmail === req.user.email) {
+    notif.read = true;
+    saveDb(db);
+  }
   res.json({ message: 'Notification marked as read' });
 });
 
@@ -475,7 +501,6 @@ app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
   res.json({ message: 'Company verified successfully', company });
 });
 
-// Cancel / Remove Company Partnership Route (Admin only)
 app.delete('/api/admin/companies/:id', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
