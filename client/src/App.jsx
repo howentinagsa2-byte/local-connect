@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
 import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, MessageSquare, Send, Mail } from 'lucide-react';
 
-const API_BASE = "https://local-connect-api-t9jx.onrender.com";
+const API_BASE = "http://localhost:5000"; // Or your Render backend URL
+const socket = io(API_BASE);
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('local_connect_user')) || null);
@@ -28,13 +30,27 @@ export default function App() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [newJob, setNewJob] = useState({ title: '', companyName: '', category: 'IT / Web Dev', type: 'OJT / Internship', mode: 'On-site', location: '', stipend: '', description: '' });
 
-  useEffect(() => { fetchJobs(); }, []);
+  useEffect(() => {
+    fetchJobs();
+    fetch(`${API_BASE}/api/messages`)
+      .then(res => res.json())
+      .then(data => setMessages(data))
+      .catch(() => {});
+
+    socket.on('receive_message', (incomingMsg) => {
+      setMessages(prev => [...prev, incomingMsg]);
+    });
+
+    return () => {
+      socket.off('receive_message');
+    };
+  }, []);
+
   useEffect(() => {
     if (currentUser && token) {
       if (currentUser.role === 'student') fetchStudentApplications();
       if (currentUser.role === 'employer') fetchEmployerApplications();
       if (currentUser.role === 'admin') fetchAdminCompanies();
-      fetchMessages();
       fetchNotifications();
     }
   }, [currentUser, token]);
@@ -43,7 +59,6 @@ export default function App() {
   const fetchStudentApplications = async () => { try { const res = await fetch(`${API_BASE}/api/applications/student`, { headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) setApplications(await res.json()); } catch (err) {} };
   const fetchEmployerApplications = async () => { try { const res = await fetch(`${API_BASE}/api/applications/employer`, { headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) setApplications(await res.json()); } catch (err) {} };
   const fetchAdminCompanies = async () => { try { const res = await fetch(`${API_BASE}/api/admin/companies`, { headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) setCompanies(await res.json()); } catch (err) {} };
-  const fetchMessages = async () => { try { const res = await fetch(`${API_BASE}/api/messages`, { headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) setMessages(await res.json()); } catch (err) {} };
   const fetchNotifications = async () => { try { const res = await fetch(`${API_BASE}/api/notifications`, { headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) setNotifications(await res.json()); } catch (err) {} };
 
   const handleLogin = async (e, demoEmail = null, demoPass = null) => {
@@ -81,20 +96,17 @@ export default function App() {
     setPassword('');
   };
 
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = (e) => {
     e.preventDefault();
     if (!chatRecipient || !chatMessageText.trim()) return;
-    try {
-      const res = await fetch(`${API_BASE}/api/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ recipientId: chatRecipient.id, text: chatMessageText })
-      });
-      if (res.ok) {
-        setChatMessageText('');
-        fetchMessages();
-      }
-    } catch (err) {}
+
+    socket.emit('send_message', {
+      senderId: currentUser.id,
+      senderName: currentUser.name,
+      recipientId: chatRecipient.id,
+      text: chatMessageText
+    });
+    setChatMessageText('');
   };
 
   const handleApplySubmit = async (e) => {
@@ -329,9 +341,9 @@ export default function App() {
                 <div className="bg-white rounded-2xl border border-slate-200/80 h-[500px] flex flex-col overflow-hidden shadow-sm">
                   <div className="p-4 bg-slate-50 border-b border-slate-200 font-bold text-sm text-slate-900">Live Chat with HR / Employer</div>
                   <div className="flex-1 p-4 overflow-y-auto space-y-3">
-                    {messages.filter(m => m.senderId === currentUser.userId || m.recipientId === currentUser.userId).map(m => (
-                      <div key={m.id} className={`flex flex-col ${m.senderId === currentUser.userId ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl text-xs ${m.senderId === currentUser.userId ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-800'}`}>
+                    {messages.filter(m => m.senderId === currentUser.id || m.recipientId === currentUser.id).map(m => (
+                      <div key={m.id} className={`flex flex-col ${m.senderId === currentUser.id ? 'items-end' : 'items-start'}`}>
+                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl text-xs ${m.senderId === currentUser.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-800'}`}>
                           <p>{m.text}</p>
                           <span className="text-[9px] opacity-70 mt-1 block text-right">{m.timestamp}</span>
                         </div>
@@ -384,7 +396,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Employer Messaging & Applicant Section */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm lg:col-span-1">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Applicants & Chats</h3>
@@ -413,10 +424,10 @@ export default function App() {
                   <p className="text-xs text-slate-400 text-center py-20">Click an applicant to chat directly.</p>
                 ) : (
                   messages
-                    .filter(m => (m.senderId === currentUser.userId && m.recipientId === chatRecipient.id) || (m.senderId === chatRecipient.id && m.recipientId === currentUser.userId))
+                    .filter(m => (m.senderId === currentUser.id && m.recipientId === chatRecipient.id) || (m.senderId === chatRecipient.id && m.recipientId === currentUser.id))
                     .map(m => (
-                      <div key={m.id} className={`flex flex-col ${m.senderId === currentUser.userId ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl text-xs ${m.senderId === currentUser.userId ? 'bg-blue-600 text-white' : 'bg-white text-slate-800 border border-slate-200 shadow-sm'}`}>
+                      <div key={m.id} className={`flex flex-col ${m.senderId === currentUser.id ? 'items-end' : 'items-start'}`}>
+                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl text-xs ${m.senderId === currentUser.id ? 'bg-blue-600 text-white' : 'bg-white text-slate-800 border border-slate-200 shadow-sm'}`}>
                           <p>{m.text}</p>
                           <span className="text-[9px] opacity-70 mt-1 block text-right">{m.timestamp}</span>
                         </div>

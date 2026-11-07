@@ -1,5 +1,7 @@
-// server.js - Complete Full-Stack Express Backend for Local Connect
+// server.js - Complete Full-Stack Express Backend with Socket.io Real-Time Messaging
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
@@ -7,13 +9,16 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PATCH', 'DELETE']
+  }
+});
+
 app.use(express.json());
-
-app.use(cors({
-  origin: '*',
-  credentials: true
-}));
-
+app.use(cors({ origin: '*', credentials: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const uploadDir = path.join(__dirname, 'uploads');
@@ -84,6 +89,28 @@ let db = {
     { id: 1, recipientEmail: 'student@icct.edu.ph', subject: 'Application Status Update', body: 'Your application for Junior Software Engineer (OJT) has been updated to: Interview Scheduled.', timestamp: '10:28 AM', read: false }
   ]
 };
+
+// WebSocket Real-Time Connection
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+
+  socket.on('send_message', (data) => {
+    const newMessage = {
+      id: Date.now(),
+      senderId: String(data.senderId),
+      senderName: data.senderName,
+      recipientId: String(data.recipientId),
+      text: data.text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    db.messages.push(newMessage);
+    io.emit('receive_message', newMessage);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -206,24 +233,7 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
 });
 
 app.get('/api/messages', authenticateToken, (req, res) => {
-  const userId = req.user.userId;
-  res.json(db.messages.filter(m => m.senderId === userId || m.recipientId === userId));
-});
-
-app.post('/api/messages', authenticateToken, (req, res) => {
-  const { recipientId, text } = req.body;
-  if (!recipientId || !text) return res.status(400).json({ error: 'Recipient and text required' });
-
-  const newMessage = {
-    id: Date.now(),
-    senderId: req.user.userId,
-    senderName: req.user.name,
-    recipientId: String(recipientId),
-    text,
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  };
-  db.messages.push(newMessage);
-  res.status(201).json({ message: 'Message sent', data: newMessage });
+  res.json(db.messages);
 });
 
 app.get('/api/notifications', authenticateToken, (req, res) => {
@@ -251,4 +261,4 @@ app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Backend with Socket.io running on port ${PORT}`));
