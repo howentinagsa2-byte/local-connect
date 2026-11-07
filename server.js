@@ -171,3 +171,4 @@ app.patch('/api/admin/companies/:id/verify', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Local Connect Backend running on port ${PORT}`));
+const API_BASE_URL = "https://local-connect-api-t9jx.onrender.com";
