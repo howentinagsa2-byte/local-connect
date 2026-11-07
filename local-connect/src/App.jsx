@@ -1,6 +1,6 @@
-// src/App.jsx - Vibrant, Lively & Modern Full-Stack Frontend
+// src/App.jsx - Complete Full-Stack Frontend with Resume Viewer & Preset Hours Selection (243, 400, 600)
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, EyeOff, Download, Mail, Bell, Settings, Award, UserPlus, User, Plus, Minus, Sparkles } from 'lucide-react';
+import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, EyeOff, Download, Mail, Bell, Settings, Award, UserPlus, User, Plus, Minus } from 'lucide-react';
 
 const API_BASE = "https://local-connect-api-t9jx.onrender.com";
 
@@ -41,10 +41,13 @@ export default function App() {
   const [selectedJobForApp, setSelectedJobForApp] = useState(null);
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
   
+  // Job Editing States
   const [editingJob, setEditingJob] = useState(null);
   const [isEditJobOpen, setIsEditJobOpen] = useState(false);
   
+  // Resume Modal Preview State for Employers
   const [viewingResumeUrl, setViewingResumeUrl] = useState(null);
+  
   const [hoursInput, setHoursInput] = useState('');
   
   const [newJob, setNewJob] = useState({
@@ -357,61 +360,57 @@ export default function App() {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-tr from-sky-400 via-indigo-500 to-blue-600 flex items-center justify-center p-4 font-sans text-slate-800 relative overflow-hidden">
-        {/* Decorative lively circles */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div className="max-w-md w-full bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/50 p-8 relative z-10">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans text-slate-100">
+        <div className="max-w-md w-full bg-slate-900/85 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-800 p-8">
           <div className="flex items-center justify-center space-x-3 mb-6">
-            <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-500/30"><Briefcase className="w-6 h-6" /></div>
+            <div className="bg-gradient-to-tr from-blue-600 to-indigo-500 text-white p-3 rounded-2xl shadow-lg shadow-blue-500/20"><Briefcase className="w-6 h-6" /></div>
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-900 leading-none">Local Connect</h1>
-              <p className="text-xs text-blue-600 font-bold mt-1 flex items-center gap-1"><Sparkles className="w-3 h-3" /> CapStone Portal</p>
+              <h1 className="text-2xl font-bold tracking-tight text-white leading-none">Local Connect</h1>
+              <p className="text-xs text-slate-400 font-medium mt-1">CapStone Portal</p>
             </div>
           </div>
 
           {authMode !== 'forgot' && (
-            <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80 mb-6 shadow-inner">
-              <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all ${authMode === 'login' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'text-slate-600 hover:text-slate-900'}`}>Sign In</button>
-              <button onClick={() => { setAuthMode('register'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all ${authMode === 'register' ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'text-slate-600 hover:text-slate-900'}`}>Student Signup</button>
-              <button onClick={() => { setAuthMode('partner'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all ${authMode === 'partner' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30' : 'text-slate-600 hover:text-slate-900'}`}>Partner With Us</button>
+            <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 mb-6">
+              <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all ${authMode === 'login' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Sign In</button>
+              <button onClick={() => { setAuthMode('register'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all ${authMode === 'register' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Student Signup</button>
+              <button onClick={() => { setAuthMode('partner'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all ${authMode === 'partner' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Partner With Us</button>
             </div>
           )}
 
           {authMode === 'forgot' && (
             <div className="mb-4 text-center">
-              <h3 className="text-sm font-bold text-slate-900">Reset Your Password</h3>
-              <p className="text-xs text-slate-500 mt-1">Enter your registered email and choose a new password.</p>
+              <h3 className="text-sm font-bold text-white">Reset Your Password</h3>
+              <p className="text-xs text-slate-400 mt-1">Enter your registered email and choose a new password.</p>
             </div>
           )}
 
           {authMode === 'partner' && (
             <div className="mb-4 text-center">
-              <h3 className="text-sm font-bold text-emerald-600">Company Partnership Application</h3>
-              <p className="text-xs text-slate-500 mt-1">Submit your company details for admin review and approval.</p>
+              <h3 className="text-sm font-bold text-emerald-400">Company Partnership Application</h3>
+              <p className="text-xs text-slate-400 mt-1">Submit your company details for admin review and approval.</p>
             </div>
           )}
 
-          {loginError && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold border border-red-200 text-center flex items-center justify-center gap-2"><AlertCircle className="w-4 h-4" /><span>{loginError}</span></div>}
-          {loginSuccess && <div className="mb-4 p-3 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-semibold border border-emerald-200 text-center flex items-center justify-center gap-2"><CheckCircle className="w-4 h-4" /><span>{loginSuccess}</span></div>}
+          {loginError && <div className="mb-4 p-3 bg-red-950/60 text-red-400 rounded-xl text-xs font-semibold border border-red-900/50 text-center flex items-center justify-center gap-2"><AlertCircle className="w-4 h-4" /><span>{loginError}</span></div>}
+          {loginSuccess && <div className="mb-4 p-3 bg-emerald-950/60 text-emerald-400 rounded-xl text-xs font-semibold border border-emerald-900/50 text-center flex items-center justify-center gap-2"><CheckCircle className="w-4 h-4" /><span>{loginSuccess}</span></div>}
           
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             {authMode === 'register' && (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Full Name</label>
-                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. John Doe" className="w-full px-4 py-3 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-blue-500 text-sm outline-none text-slate-900 shadow-sm transition-all" />
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. John Doe" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Address</label>
-                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. student@icct.edu.ph" className="w-full px-4 py-3 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-blue-500 text-sm outline-none text-slate-900 shadow-sm transition-all" />
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. student@icct.edu.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-blue-500 text-sm outline-none text-slate-900 shadow-sm transition-all" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -422,28 +421,28 @@ export default function App() {
             {authMode === 'partner' && (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Company Name</label>
-                  <input type="text" required value={compName} onChange={(e) => setCompName(e.target.value)} placeholder="e.g. Tech Corp" className="w-full px-3.5 py-2.5 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-emerald-500 text-xs outline-none text-slate-900 shadow-sm" />
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Company Name</label>
+                  <input type="text" required value={compName} onChange={(e) => setCompName(e.target.value)} placeholder="e.g. Tech Corp" className="w-full px-3.5 py-2.5 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-emerald-500 text-xs outline-none text-slate-100" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Industry</label>
-                    <input type="text" required value={compIndustry} onChange={(e) => setCompIndustry(e.target.value)} placeholder="e.g. IT / Logistics" className="w-full px-3.5 py-2.5 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-emerald-500 text-xs outline-none text-slate-900 shadow-sm" />
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Industry</label>
+                    <input type="text" required value={compIndustry} onChange={(e) => setCompIndustry(e.target.value)} placeholder="e.g. IT / Logistics" className="w-full px-3.5 py-2.5 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-emerald-500 text-xs outline-none text-slate-100" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Location</label>
-                    <input type="text" required value={compLocation} onChange={(e) => setCompLocation(e.target.value)} placeholder="e.g. Marikina" className="w-full px-3.5 py-2.5 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-emerald-500 text-xs outline-none text-slate-900 shadow-sm" />
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Location</label>
+                    <input type="text" required value={compLocation} onChange={(e) => setCompLocation(e.target.value)} placeholder="e.g. Marikina" className="w-full px-3.5 py-2.5 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-emerald-500 text-xs outline-none text-slate-100" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">HR Contact Email</label>
-                  <input type="email" required value={compEmail} onChange={(e) => setCompEmail(e.target.value)} placeholder="e.g. hr@techcorp.com" className="w-full px-3.5 py-2.5 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-emerald-500 text-xs outline-none text-slate-900 shadow-sm" />
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">HR Contact Email</label>
+                  <input type="email" required value={compEmail} onChange={(e) => setCompEmail(e.target.value)} placeholder="e.g. hr@techcorp.com" className="w-full px-3.5 py-2.5 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-emerald-500 text-xs outline-none text-slate-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} required value={compPassword} onChange={(e) => setCompPassword(e.target.value)} placeholder="••••••••" className="w-full px-3.5 py-2.5 pr-10 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-emerald-500 text-xs outline-none text-slate-900 shadow-sm" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <input type={showPassword ? "text" : "password"} required value={compPassword} onChange={(e) => setCompPassword(e.target.value)} placeholder="••••••••" className="w-full px-3.5 py-2.5 pr-10 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-emerald-500 text-xs outline-none text-slate-100" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -454,22 +453,22 @@ export default function App() {
             {authMode === 'login' && (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Address</label>
-                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. admin@localnet.ph" className="w-full px-4 py-3 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-blue-500 text-sm outline-none text-slate-900 shadow-sm" />
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. admin@localnet.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-blue-500 text-sm outline-none text-slate-900 shadow-sm" />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <input type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between text-xs pt-1">
-                  <label className="flex items-center space-x-2 cursor-pointer text-slate-600">
-                    <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 rounded bg-slate-100 border-slate-300 text-blue-600 focus:ring-0 cursor-pointer" />
+                  <label className="flex items-center space-x-2 cursor-pointer text-slate-300">
+                    <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 rounded bg-slate-950 border-slate-800 text-blue-600 focus:ring-0 cursor-pointer" />
                     <span>Remember Me</span>
                   </label>
                 </div>
@@ -479,14 +478,14 @@ export default function App() {
             {authMode === 'forgot' && (
               <>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email Address</label>
-                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. hr@company.com" className="w-full px-4 py-3 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-blue-500 text-sm outline-none text-slate-900 shadow-sm" />
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. hr@company.com" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">New Password</label>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">New Password</label>
                   <div className="relative">
-                    <input type={showNewPassword ? "text" : "password"} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-50/80 rounded-xl border border-slate-200 focus:border-blue-500 text-sm outline-none text-slate-900 shadow-sm" />
-                    <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <input type={showNewPassword ? "text" : "password"} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 pr-10 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100" />
+                    <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                       {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -494,15 +493,15 @@ export default function App() {
               </>
             )}
 
-            <button type="submit" disabled={isSubmitting} className={`w-full font-bold py-3.5 rounded-xl transition-all shadow-lg text-sm mt-2 disabled:opacity-50 ${authMode === 'partner' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/30 hover:scale-[1.01] active:scale-[0.99]' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 hover:scale-[1.01] active:scale-[0.99]'}`}>
+            <button type="submit" disabled={isSubmitting} className={`w-full font-bold py-3 rounded-xl transition-all shadow-lg text-sm mt-2 disabled:opacity-50 ${authMode === 'partner' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/25' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/25'}`}>
               {isSubmitting ? 'Processing...' : (authMode === 'login' ? 'Sign In to Portal' : authMode === 'register' ? 'Register Student Account' : authMode === 'partner' ? 'Submit Partnership Application' : 'Reset Password')}
             </button>
           </form>
 
-          <div className="mt-5 text-center">
-            {authMode === 'login' && <button onClick={() => { setAuthMode('forgot'); setLoginError(''); setLoginSuccess(''); }} className="text-xs font-semibold text-blue-600 hover:underline">Forgot password?</button>}
-            {authMode !== 'login' && authMode !== 'partner' && <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs font-semibold text-slate-500 hover:text-slate-900">Back to Sign In</button>}
-            {authMode === 'partner' && <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs font-semibold text-slate-500 hover:text-slate-900">Already approved? Sign In</button>}
+          <div className="mt-4 text-center">
+            {authMode === 'login' && <button onClick={() => { setAuthMode('forgot'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-blue-400 hover:underline">Forgot password?</button>}
+            {authMode !== 'login' && authMode !== 'partner' && <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-slate-400 hover:text-white">Back to Sign In</button>}
+            {authMode === 'partner' && <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-slate-400 hover:text-white">Already approved? Sign In</button>}
           </div>
         </div>
       </div>
@@ -512,47 +511,47 @@ export default function App() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/50 to-indigo-50/60 text-slate-800 font-sans relative">
-      <header className="bg-white/85 backdrop-blur-xl border-b border-slate-200/80 sticky top-0 z-40 shadow-sm">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative">
+      <header className="bg-slate-900/80 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-blue-500/25"><Briefcase className="w-5 h-5" /></div>
+            <div className="bg-gradient-to-tr from-blue-600 to-indigo-500 text-white p-2 rounded-xl shadow-md shadow-blue-500/20"><Briefcase className="w-5 h-5" /></div>
             <div>
-              <h2 className="text-base font-black text-slate-900 leading-none">Local Connect</h2>
-              <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wide capitalize">{currentUser.role} Workspace</span>
+              <h2 className="text-base font-bold text-white leading-none">Local Connect</h2>
+              <span className="text-[11px] font-semibold text-slate-400 capitalize">{currentUser.role} Workspace ({currentUser.email})</span>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <button onClick={() => setIsNotificationsOpen(!isNotificationsOpen)} className="relative p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all shadow-sm">
+            <button onClick={() => setIsNotificationsOpen(!isNotificationsOpen)} className="relative p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
               <Bell className="w-4 h-4" />
-              {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-md animate-bounce">{unreadCount}</span>}
+              {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold shadow-lg">{unreadCount}</span>}
             </button>
-            <button onClick={() => setIsProfileOpen(true)} className="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all shadow-sm">
-              <User className="w-3.5 h-3.5 text-blue-600" />
+            <button onClick={() => setIsProfileOpen(true)} className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors">
+              <User className="w-3.5 h-3.5 text-blue-400" />
               <span className="hidden sm:inline">{currentUser.name}</span>
             </button>
-            <button onClick={handleLogout} className="flex items-center space-x-1 px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-all shadow-sm"><LogOut className="w-3.5 h-3.5" /><span>Logout</span></button>
+            <button onClick={handleLogout} className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"><LogOut className="w-3.5 h-3.5" /><span>Logout</span></button>
           </div>
         </div>
       </header>
 
       {isNotificationsOpen && (
-        <div className="absolute right-4 top-20 w-80 bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-slate-200 z-50 p-4 animate-in fade-in zoom-in-95 duration-200">
-          <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
-            <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Notifications</h4>
-            <button onClick={() => setIsNotificationsOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+        <div className="absolute right-4 top-20 w-80 bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-800 z-50 p-4">
+          <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
+            <h4 className="font-bold text-slate-200 text-xs uppercase tracking-wider">Notifications ({currentUser.email})</h4>
+            <button onClick={() => setIsNotificationsOpen(false)} className="text-slate-400 hover:text-slate-200"><X className="w-4 h-4" /></button>
           </div>
           <div className="space-y-2.5 max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">No notifications.</p>
+              <p className="text-xs text-slate-500 text-center py-4">No notifications.</p>
             ) : (
               notifications.map(n => (
-                <div key={n.id} onClick={() => handleMarkNotificationRead(n.id)} className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${n.read ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-blue-50 border-blue-200 shadow-sm'}`}>
+                <div key={n.id} onClick={() => handleMarkNotificationRead(n.id)} className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${n.read ? 'bg-slate-950/40 border-slate-800/80 opacity-60' : 'bg-blue-950/40 border-blue-800/60 shadow-md'}`}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-slate-900">{n.subject}</span>
-                    <span className="text-[10px] text-slate-500">{n.timestamp}</span>
+                    <span className="font-bold text-slate-200">{n.subject}</span>
+                    <span className="text-[10px] text-slate-400">{n.timestamp}</span>
                   </div>
-                  <p className="text-slate-600 leading-relaxed">{n.body}</p>
+                  <p className="text-slate-400 leading-relaxed">{n.body}</p>
                   {!n.read && <span className="inline-block mt-1.5 text-[9px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-semibold">New</span>}
                 </div>
               ))
@@ -562,34 +561,34 @@ export default function App() {
       )}
 
       {isProfileOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-800">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-slate-900">Account Settings & Profile</h3>
-              <button onClick={() => setIsProfileOpen(false)} className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600"><X className="w-4 h-4" /></button>
+              <h3 className="text-base font-bold text-white">Account Settings & Profile</h3>
+              <button onClick={() => setIsProfileOpen(false)} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
             </div>
-            {profileMessage && <div className={`mb-4 p-3 rounded-xl text-xs font-semibold text-center ${profileMessage.includes('success') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>{profileMessage}</div>}
+            {profileMessage && <div className={`mb-4 p-3 rounded-xl text-xs font-semibold text-center ${profileMessage.includes('success') ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-900' : 'bg-red-950/60 text-red-400 border border-red-900'}`}>{profileMessage}</div>}
             <form onSubmit={handleProfileUpdate} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Full Name / Entity Name</label>
-                <input type="text" required value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
+                <label className="block text-xs font-bold text-slate-400 mb-1">Full Name / Entity Name</label>
+                <input type="text" required value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
-                <input type="email" required value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
+                <label className="block text-xs font-bold text-slate-400 mb-1">Email Address</label>
+                <input type="email" required value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">New Password (leave blank to keep current)</label>
+                <label className="block text-xs font-bold text-slate-400 mb-1">New Password (leave blank to keep current)</label>
                 <div className="relative">
-                  <input type={showProfilePassword ? "text" : "password"} value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2.5 pr-10 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
-                  <button type="button" onClick={() => setShowProfilePassword(!showProfilePassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  <input type={showProfilePassword ? "text" : "password"} value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-2.5 pr-10 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
+                  <button type="button" onClick={() => setShowProfilePassword(!showProfilePassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
                     {showProfilePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
               <div className="flex justify-end space-x-3 pt-2">
-                <button type="button" onClick={() => setIsProfileOpen(false)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-500/20">Save Changes</button>
+                <button type="button" onClick={() => setIsProfileOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg">Save Changes</button>
               </div>
             </form>
           </div>
@@ -600,69 +599,70 @@ export default function App() {
         {currentUser.role === 'student' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Internship Progress</span>
+              <div className="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-800">
+                <span className="text-xs font-bold text-slate-400 uppercase">Internship Progress</span>
                 <div className="flex items-baseline justify-between mt-2">
-                  <span className="text-3xl font-black text-slate-900">{currentUser.completedHours || 0} <span className="text-xs font-bold text-slate-400">/ {currentUser.totalRequiredHours || 500} hrs</span></span>
-                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">{Math.round(((currentUser.completedHours || 0) / (currentUser.totalRequiredHours || 500)) * 100)}%</span>
+                  <span className="text-2xl font-black text-white">{currentUser.completedHours || 0} <span className="text-xs font-normal text-slate-400">/ {currentUser.totalRequiredHours || 500} hrs</span></span>
+                  <span className="text-xs font-bold text-blue-400">{Math.round(((currentUser.completedHours || 0) / (currentUser.totalRequiredHours || 500)) * 100)}%</span>
                 </div>
-                <div className="w-full bg-slate-100 h-2.5 rounded-full mt-3 overflow-hidden shadow-inner">
-                  <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, ((currentUser.completedHours || 0) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
+                <div className="w-full bg-slate-800 h-2 rounded-full mt-3 overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-500 h-full rounded-full" style={{ width: `${Math.min(100, ((currentUser.completedHours || 0) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100">
-                  <span className="block text-[11px] font-bold text-slate-500 mb-1.5">Required Hours Goal:</span>
+                {/* Preset Required Hours Selectors (243, 400, 600) */}
+                <div className="mt-3 pt-3 border-t border-slate-800/80">
+                  <span className="block text-[11px] font-bold text-slate-400 mb-1.5">Required Hours Goal:</span>
                   <div className="grid grid-cols-3 gap-1.5">
-                    <button onClick={() => handleSetTargetHours(243)} className={`py-1.5 text-[11px] font-bold rounded-xl border transition-all ${currentUser.totalRequiredHours === 243 ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/25' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}>243 hrs</button>
-                    <button onClick={() => handleSetTargetHours(400)} className={`py-1.5 text-[11px] font-bold rounded-xl border transition-all ${currentUser.totalRequiredHours === 400 ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/25' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}>400 hrs</button>
-                    <button onClick={() => handleSetTargetHours(600)} className={`py-1.5 text-[11px] font-bold rounded-xl border transition-all ${currentUser.totalRequiredHours === 600 ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-500/25' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'}`}>600 hrs</button>
+                    <button onClick={() => handleSetTargetHours(243)} className={`py-1 text-[11px] font-bold rounded-lg border transition-all ${currentUser.totalRequiredHours === 243 ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'}`}>243 hrs</button>
+                    <button onClick={() => handleSetTargetHours(400)} className={`py-1 text-[11px] font-bold rounded-lg border transition-all ${currentUser.totalRequiredHours === 400 ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'}`}>400 hrs</button>
+                    <button onClick={() => handleSetTargetHours(600)} className={`py-1 text-[11px] font-bold rounded-lg border transition-all ${currentUser.totalRequiredHours === 600 ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'}`}>600 hrs</button>
                   </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
-                  <input type="number" min="1" placeholder="Hours" value={hoursInput} onChange={(e) => setHoursInput(e.target.value)} className="w-20 px-3 py-2 bg-slate-50 rounded-xl text-xs border border-slate-200 text-slate-900 outline-none focus:border-blue-500 shadow-inner" />
-                  <button onClick={() => handleModifyHours(true)} className="flex-1 py-2 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md shadow-emerald-600/20">
+                {/* Quick Add / Remove hours */}
+                <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center gap-2">
+                  <input type="number" min="1" placeholder="Hours" value={hoursInput} onChange={(e) => setHoursInput(e.target.value)} className="w-20 px-2.5 py-1.5 bg-slate-950 rounded-xl text-xs border border-slate-800 text-white outline-none focus:border-blue-500" />
+                  <button onClick={() => handleModifyHours(true)} className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md">
                     <Plus className="w-3.5 h-3.5" /> Add
                   </button>
-                  <button onClick={() => handleModifyHours(false)} className="flex-1 py-2 px-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md shadow-red-500/20">
+                  <button onClick={() => handleModifyHours(false)} className="flex-1 py-1.5 px-2 bg-red-600/80 hover:bg-red-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all shadow-md">
                     <Minus className="w-3.5 h-3.5" /> Remove
                   </button>
                 </div>
               </div>
 
-              <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 flex flex-col justify-between">
+              <div className="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
                 <div>
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Applications</span>
-                  <span className="block text-3xl font-black text-slate-900 mt-2">{applications.length}</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase">Active Applications</span>
+                  <span className="block text-2xl font-black text-white mt-2">{applications.length}</span>
                 </div>
-                <span className="text-[11px] font-medium text-slate-400 mt-2 flex items-center gap-1"><Sparkles className="w-3 h-3 text-blue-500" /> Track status updates in real-time</span>
+                <span className="text-[11px] text-slate-400 mt-2">Track status updates in real-time</span>
               </div>
-              <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 flex flex-col justify-between">
+              <div className="bg-slate-900/60 backdrop-blur-md p-5 rounded-2xl border border-slate-800 flex flex-col justify-between">
                 <div>
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">System Status</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase">System Status</span>
                   <div className="flex items-center space-x-2 mt-2">
-                    <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-sm font-bold text-slate-800">Connected & Persistent</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-sm font-bold text-slate-200">Connected & Persistent</span>
                   </div>
                 </div>
-                <span className="text-[11px] font-medium text-slate-400 mt-2">ICCT Colleges Capstone Platform</span>
+                <span className="text-[11px] text-slate-400 mt-2">ICCT Colleges Capstone Platform</span>
               </div>
             </div>
 
-            <div className="flex space-x-2 border-b border-slate-200 pb-3">
-              <button onClick={() => setActiveTab('browse')} className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm ${activeTab === 'browse' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200'}`}>Browse OJT Listings</button>
-              <button onClick={() => setActiveTab('my-apps')} className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm ${activeTab === 'my-apps' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200'}`}>My Applications ({applications.length})</button>
+            <div className="flex space-x-2 border-b border-slate-800 pb-3">
+              <button onClick={() => setActiveTab('browse')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'browse' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Browse OJT Listings</button>
+              <button onClick={() => setActiveTab('my-apps')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'my-apps' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>My Applications ({applications.length})</button>
             </div>
 
             {activeTab === 'browse' && (
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input type="text" placeholder="Search by job title, company, or location..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-11 pr-4 py-3.5 bg-white rounded-2xl border border-slate-200 text-xs text-slate-900 outline-none focus:border-blue-500 shadow-sm" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input type="text" placeholder="Search by job title, company, or location..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs text-slate-100 outline-none focus:border-blue-500" />
                   </div>
-                  <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="px-4 py-3.5 bg-white rounded-2xl border border-slate-200 text-xs text-slate-700 outline-none shadow-sm font-semibold">
+                  <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="px-4 py-3 bg-slate-900 rounded-xl border border-slate-800 text-xs text-slate-300 outline-none">
                     <option value="All">All Categories</option>
                     <option value="IT / Web Dev">IT / Web Dev</option>
                     <option value="Logistics">Logistics</option>
@@ -672,25 +672,25 @@ export default function App() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {filteredJobs.length === 0 ? (
-                    <div className="col-span-full py-12 text-center text-slate-400 text-xs bg-white rounded-3xl border border-slate-200 shadow-sm">No matching OJT listings found. Please ask your admin to post positions.</div>
+                    <div className="col-span-full py-12 text-center text-slate-500 text-xs">No matching OJT listings found. Please ask your admin to post positions.</div>
                   ) : (
                     filteredJobs.map(job => (
-                      <div key={job.id} className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 p-6 flex flex-col justify-between hover:border-blue-300 hover:shadow-xl transition-all shadow-sm group">
+                      <div key={job.id} className="bg-slate-900/70 backdrop-blur-md rounded-2xl border border-slate-800 p-6 flex flex-col justify-between hover:border-slate-700 transition-all">
                         <div>
                           <div className="flex justify-between items-start mb-3">
-                            <span className="px-3.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">{job.category}</span>
-                            <span className="text-[11px] text-slate-400 font-medium">{job.posted}</span>
+                            <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-blue-950 text-blue-400 border border-blue-900">{job.category}</span>
+                            <span className="text-[11px] text-slate-400">{job.posted}</span>
                           </div>
-                          <h3 className="text-base font-bold text-slate-900 mb-1 group-hover:text-blue-600 transition-colors">{job.title}</h3>
-                          <p className="text-xs font-semibold text-slate-600 mb-3">{job.companyName}</p>
-                          <div className="flex flex-wrap gap-2 mb-4 text-[11px] text-slate-500">
-                            <span className="flex items-center gap-1 bg-slate-50 px-3 py-1 rounded-xl border border-slate-200"><MapPin className="w-3 h-3 text-blue-500" />{job.location}</span>
-                            <span className="flex items-center gap-1 bg-slate-50 px-3 py-1 rounded-xl border border-slate-200"><Clock className="w-3 h-3 text-indigo-500" />{job.type}</span>
-                            <span className="flex items-center gap-1 bg-slate-50 px-3 py-1 rounded-xl border border-slate-200"><DollarSign className="w-3 h-3 text-emerald-500" />{job.stipend}</span>
+                          <h3 className="text-base font-bold text-white mb-1">{job.title}</h3>
+                          <p className="text-xs font-semibold text-slate-300 mb-3">{job.companyName}</p>
+                          <div className="flex flex-wrap gap-2 mb-4 text-[11px] text-slate-400">
+                            <span className="flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"><MapPin className="w-3 h-3 text-slate-500" />{job.location}</span>
+                            <span className="flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"><Clock className="w-3 h-3 text-slate-500" />{job.type}</span>
+                            <span className="flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800"><DollarSign className="w-3 h-3 text-slate-500" />{job.stipend}</span>
                           </div>
-                          <p className="text-xs text-slate-600 line-clamp-2 mb-5 leading-relaxed">{job.description}</p>
+                          <p className="text-xs text-slate-400 line-clamp-2 mb-4">{job.description}</p>
                         </div>
-                        <button onClick={() => setSelectedJobForApp(job)} className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-blue-600/25 hover:scale-[1.01] active:scale-[0.99]">Apply for OJT Position</button>
+                        <button onClick={() => setSelectedJobForApp(job)} className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg">Apply for OJT Position</button>
                       </div>
                     ))
                   )}
@@ -699,20 +699,20 @@ export default function App() {
             )}
 
             {activeTab === 'my-apps' && (
-              <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 overflow-hidden shadow-xl shadow-slate-200/40">
-                <div className="px-6 py-4 border-b border-slate-100 font-bold text-xs uppercase tracking-wider text-slate-700">Submitted Applications</div>
-                <div className="divide-y divide-slate-100">
+              <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">Submitted Applications</div>
+                <div className="divide-y divide-slate-800">
                   {applications.length === 0 ? (
-                    <p className="p-6 text-center text-xs text-slate-400">You have not submitted any applications yet.</p>
+                    <p className="p-6 text-center text-xs text-slate-500">You have not submitted any applications yet.</p>
                   ) : (
                     applications.map(app => (
                       <div key={app.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                          <h4 className="font-bold text-sm text-slate-900">{app.jobTitle}</h4>
-                          <p className="text-xs text-slate-500">{app.companyName} • Applied on {app.appliedDate}</p>
+                          <h4 className="font-bold text-sm text-white">{app.jobTitle}</h4>
+                          <p className="text-xs text-slate-400">{app.companyName} • Applied on {app.appliedDate}</p>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <span className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold ${app.status === 'Interview Scheduled' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>{app.status}</span>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${app.status === 'Interview Scheduled' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' : 'bg-blue-950 text-blue-400 border border-blue-900'}`}>{app.status}</span>
                         </div>
                       </div>
                     ))
@@ -725,31 +725,32 @@ export default function App() {
 
         {currentUser.role === 'employer' && (
           <div className="space-y-6">
-            <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 flex justify-between items-center">
+            <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">{currentUser.name} Dashboard</h3>
-                <p className="text-xs text-slate-500 mt-1">Showing only the students who applied to {currentUser.name} ({currentUser.email}).</p>
+                <h3 className="text-lg font-bold text-white">{currentUser.name} Dashboard</h3>
+                <p className="text-xs text-slate-400 mt-1">Showing only the students who applied to {currentUser.name} ({currentUser.email}).</p>
               </div>
-              <span className="px-3.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-full">Partner Verified</span>
+              <span className="px-3 py-1 bg-emerald-950 text-emerald-400 border border-emerald-900 text-xs font-bold rounded-full">Partner Verified</span>
             </div>
 
-            <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 overflow-hidden shadow-xl shadow-slate-200/40">
-              <div className="px-6 py-4 border-b border-slate-100 font-bold text-xs uppercase tracking-wider text-slate-700">Applicants for {currentUser.name} ({applications.length})</div>
-              <div className="divide-y divide-slate-100">
+            <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">Applicants for {currentUser.name} ({applications.length})</div>
+              <div className="divide-y divide-slate-800">
                 {applications.length === 0 ? (
-                  <p className="p-6 text-center text-xs text-slate-400">No student applications received for your company yet.</p>
+                  <p className="p-6 text-center text-xs text-slate-500">No student applications received for your company yet.</p>
                 ) : (
                   applications.map(app => (
                     <div key={app.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
-                        <h4 className="font-bold text-sm text-slate-900">{app.studentName} <span className="text-xs font-normal text-slate-500">({app.studentEmail})</span></h4>
-                        <p className="text-xs text-blue-600 mt-0.5 font-semibold">Applied for: {app.jobTitle}</p>
+                        <h4 className="font-bold text-sm text-white">{app.studentName} <span className="text-xs font-normal text-slate-400">({app.studentEmail})</span></h4>
+                        <p className="text-xs text-blue-400 mt-0.5">Applied for: {app.jobTitle}</p>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <button onClick={() => setViewingResumeUrl(`${API_BASE}${app.resumeUrl}`)} className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-200 shadow-sm transition-all">
-                          <FileText className="w-3.5 h-3.5 text-blue-600" /> View Resume
+                        {/* RESTORED VIEW RESUME BUTTON */}
+                        <button onClick={() => setViewingResumeUrl(`${API_BASE}${app.resumeUrl}`)} className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-700">
+                          <FileText className="w-3.5 h-3.5 text-blue-400" /> View Resume
                         </button>
-                        <select value={app.status} onChange={(e) => handleUpdateAppStatus(app.id, e.target.value)} className="px-3.5 py-2 bg-slate-50 rounded-xl text-xs text-slate-800 border border-slate-200 outline-none font-semibold shadow-sm">
+                        <select value={app.status} onChange={(e) => handleUpdateAppStatus(app.id, e.target.value)} className="px-3 py-1.5 bg-slate-950 rounded-xl text-xs text-slate-200 border border-slate-800 outline-none">
                           <option value="Under Review">Under Review</option>
                           <option value="Interview Scheduled">Interview Scheduled</option>
                           <option value="Hired">Hired</option>
@@ -766,41 +767,41 @@ export default function App() {
 
         {currentUser.role === 'admin' && (
           <div className="space-y-6">
-            <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl border border-slate-200/80 shadow-xl shadow-slate-200/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">Placement Coordinator Control Center</h3>
-                <p className="text-xs text-slate-500 mt-1">Manage partner companies, publish official OJT slots, and generate reports.</p>
+                <h3 className="text-lg font-bold text-white">Placement Coordinator Control Center</h3>
+                <p className="text-xs text-slate-400 mt-1">Manage partner companies, publish official OJT slots, and generate reports.</p>
               </div>
-              <div className="flex gap-2.5">
-                <button onClick={handleExportCSV} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/25 flex items-center gap-2"><Download className="w-4 h-4" />Export CSV Report</button>
-                <button onClick={() => setIsPostJobOpen(true)} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-blue-600/25 flex items-center gap-2"><PlusCircle className="w-4 h-4" />Post Official OJT Slot</button>
+              <div className="flex gap-2">
+                <button onClick={handleExportCSV} className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-2"><Download className="w-4 h-4" />Export CSV Report</button>
+                <button onClick={() => setIsPostJobOpen(true)} className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-2"><PlusCircle className="w-4 h-4" />Post Official OJT Slot</button>
               </div>
             </div>
 
-            <div className="flex space-x-2 border-b border-slate-200 pb-3">
-              <button onClick={() => setAdminTab('companies')} className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200'}`}>Partner Companies ({companies.length})</button>
-              <button onClick={() => setAdminTab('jobs')} className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm ${adminTab === 'jobs' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200'}`}>Active Job Listings ({jobs.length})</button>
+            <div className="flex space-x-2 border-b border-slate-800 pb-3">
+              <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Partner Companies ({companies.length})</button>
+              <button onClick={() => setAdminTab('jobs')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'jobs' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white bg-slate-900'}`}>Active Job Listings ({jobs.length})</button>
             </div>
 
             {adminTab === 'companies' && (
-              <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 overflow-hidden shadow-xl shadow-slate-200/40">
-                <div className="px-6 py-4 border-b border-slate-100 font-bold text-xs uppercase tracking-wider text-slate-700">Company Partnership Approvals</div>
-                <div className="divide-y divide-slate-100">
+              <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">Company Partnership Approvals</div>
+                <div className="divide-y divide-slate-800">
                   {companies.length === 0 ? (
-                    <p className="p-6 text-center text-xs text-slate-400">No partner companies registered yet.</p>
+                    <p className="p-6 text-center text-xs text-slate-500">No partner companies registered yet.</p>
                   ) : (
                     companies.map(c => (
                       <div key={c.id} className="p-5 flex items-center justify-between">
                         <div>
-                          <h4 className="font-bold text-sm text-slate-900">{c.name}</h4>
-                          <p className="text-xs text-slate-500">{c.industry} • {c.location} • {c.email}</p>
+                          <h4 className="font-bold text-sm text-white">{c.name}</h4>
+                          <p className="text-xs text-slate-400">{c.industry} • {c.location} • {c.email}</p>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <span className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold ${c.status === 'Verified' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>{c.status}</span>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${c.status === 'Verified' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' : 'bg-amber-950 text-amber-400 border border-amber-900'}`}>{c.status}</span>
                           {c.status !== 'Verified' && (
-                            <button onClick={() => handleVerifyCompany(c.id)} className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold cursor-pointer shadow-md shadow-emerald-600/20">Approve</button>
+                            <button onClick={() => handleVerifyCompany(c.id)} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold cursor-pointer">Approve</button>
                           )}
-                          <button onClick={() => handleCancelCompany(c.id)} className="px-3.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1 transition-all">
+                          <button onClick={() => handleCancelCompany(c.id)} className="px-3 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-900/50 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1">
                             <Trash2 className="w-3.5 h-3.5" /> Cancel
                           </button>
                         </div>
@@ -812,21 +813,21 @@ export default function App() {
             )}
 
             {adminTab === 'jobs' && (
-              <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 overflow-hidden shadow-xl shadow-slate-200/40">
-                <div className="px-6 py-4 border-b border-slate-100 font-bold text-xs uppercase tracking-wider text-slate-700">Published OJT Positions</div>
-                <div className="divide-y divide-slate-100">
+              <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-800 font-bold text-xs uppercase tracking-wider text-slate-300">Published OJT Positions</div>
+                <div className="divide-y divide-slate-800">
                   {jobs.length === 0 ? (
-                    <p className="p-6 text-center text-xs text-slate-400">No active job listings. Click "Post Official OJT Slot" above to add one.</p>
+                    <p className="p-6 text-center text-xs text-slate-500">No active job listings. Click "Post Official OJT Slot" above to add one.</p>
                   ) : (
                     jobs.map(j => (
                       <div key={j.id} className="p-5 flex items-center justify-between">
                         <div>
-                          <h4 className="font-bold text-sm text-slate-900">{j.title}</h4>
-                          <p className="text-xs text-slate-500">{j.companyName} • {j.location} • {j.stipend}</p>
+                          <h4 className="font-bold text-sm text-white">{j.title}</h4>
+                          <p className="text-xs text-slate-400">{j.companyName} • {j.location} • {j.stipend}</p>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <button onClick={() => { setEditingJob(j); setIsEditJobOpen(true); }} className="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl border border-blue-200 text-xs font-bold transition-all">Edit</button>
-                          <button onClick={() => handleDeleteJob(j.id)} className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl border border-red-200 transition-all"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => { setEditingJob(j); setIsEditJobOpen(true); }} className="px-3 py-1.5 bg-blue-950/60 hover:bg-blue-900 text-blue-400 rounded-xl border border-blue-900/50 text-xs font-bold transition-all">Edit</button>
+                          <button onClick={() => handleDeleteJob(j.id)} className="p-2 bg-red-950/60 hover:bg-red-900/80 text-red-400 rounded-xl border border-red-900/50 transition-all"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </div>
                     ))
@@ -838,18 +839,19 @@ export default function App() {
         )}
       </main>
 
+      {/* View Resume Modal for Employers */}
       {viewingResumeUrl && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 flex flex-col h-[80vh]">
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Student Resume Preview</h3>
-              <button onClick={() => setViewingResumeUrl(null)} className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600"><X className="w-4 h-4" /></button>
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-800 flex flex-col h-[80vh]">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Student Resume Preview</h3>
+              <button onClick={() => setViewingResumeUrl(null)} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
             </div>
-            <div className="flex-1 bg-slate-50 rounded-2xl overflow-hidden border border-slate-200 flex items-center justify-center">
+            <div className="flex-1 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center">
               <iframe src={viewingResumeUrl} className="w-full h-full" title="Resume PDF Preview"></iframe>
             </div>
             <div className="flex justify-end pt-4">
-              <a href={viewingResumeUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-blue-500/25">
+              <a href={viewingResumeUrl} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg">
                 <Download className="w-4 h-4" /> Download PDF
               </a>
             </div>
@@ -858,20 +860,20 @@ export default function App() {
       )}
 
       {selectedJobForApp && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-800">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-slate-900">Apply for {selectedJobForApp.title}</h3>
-              <button onClick={() => setSelectedJobForApp(null)} className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600"><X className="w-4 h-4" /></button>
+              <h3 className="text-base font-bold text-white">Apply for {selectedJobForApp.title}</h3>
+              <button onClick={() => setSelectedJobForApp(null)} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
             </div>
             <form onSubmit={handleApplySubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Upload Resume (PDF)</label>
-                <input type="file" accept="application/pdf" onChange={(e) => setResumeFile(e.target.files[0])} className="w-full text-xs text-slate-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
+                <label className="block text-xs font-bold text-slate-400 mb-1">Upload Resume (PDF)</label>
+                <input type="file" accept="application/pdf" onChange={(e) => setResumeFile(e.target.files[0])} className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer" />
               </div>
               <div className="flex justify-end space-x-3 pt-2">
-                <button type="button" onClick={() => setSelectedJobForApp(null)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-500/25">Submit Application</button>
+                <button type="button" onClick={() => setSelectedJobForApp(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg">Submit Application</button>
               </div>
             </form>
           </div>
@@ -879,46 +881,46 @@ export default function App() {
       )}
 
       {isPostJobOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-800">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-slate-900">Post Official OJT Listing (Admin)</h3>
-              <button onClick={() => setIsPostJobOpen(false)} className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600"><X className="w-4 h-4" /></button>
+              <h3 className="text-base font-bold text-white">Post Official OJT Listing (Admin)</h3>
+              <button onClick={() => setIsPostJobOpen(false)} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
             </div>
             <form onSubmit={handlePostJobSubmit} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Job Title</label>
-                <input type="text" required value={newJob.title} onChange={(e) => setNewJob({ ...newJob, title: e.target.value })} placeholder="e.g. Junior Web Developer" className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
+                <label className="block text-xs font-bold text-slate-400 mb-1">Job Title</label>
+                <input type="text" required value={newJob.title} onChange={(e) => setNewJob({ ...newJob, title: e.target.value })} placeholder="e.g. Junior Web Developer" className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Partner Company Name</label>
-                <input type="text" required value={newJob.companyName} onChange={(e) => setNewJob({ ...newJob, companyName: e.target.value })} placeholder="e.g. TechSolutions Inc." className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
+                <label className="block text-xs font-bold text-slate-400 mb-1">Partner Company Name</label>
+                <input type="text" required value={newJob.companyName} onChange={(e) => setNewJob({ ...newJob, companyName: e.target.value })} placeholder="e.g. TechSolutions Inc." className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Category</label>
-                  <select value={newJob.category} onChange={(e) => setNewJob({ ...newJob, category: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none shadow-sm">
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Category</label>
+                  <select value={newJob.category} onChange={(e) => setNewJob({ ...newJob, category: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none">
                     <option value="IT / Web Dev">IT / Web Dev</option>
                     <option value="Logistics">Logistics</option>
                     <option value="Healthcare">Healthcare</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Location</label>
-                  <input type="text" required value={newJob.location} onChange={(e) => setNewJob({ ...newJob, location: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Location</label>
+                  <input type="text" required value={newJob.location} onChange={(e) => setNewJob({ ...newJob, location: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Stipend / Allowance</label>
-                <input type="text" required value={newJob.stipend} onChange={(e) => setNewJob({ ...newJob, stipend: e.target.value })} placeholder="e.g. PHP 500 / day" className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
+                <label className="block text-xs font-bold text-slate-400 mb-1">Stipend / Allowance</label>
+                <input type="text" required value={newJob.stipend} onChange={(e) => setNewJob({ ...newJob, stipend: e.target.value })} placeholder="e.g. PHP 500 / day" className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Job Description</label>
-                <textarea required rows="3" value={newJob.description} onChange={(e) => setNewJob({ ...newJob, description: e.target.value })} placeholder="Detailed intern responsibilities..." className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm resize-none"></textarea>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Job Description</label>
+                <textarea required rows="3" value={newJob.description} onChange={(e) => setNewJob({ ...newJob, description: e.target.value })} placeholder="Detailed intern responsibilities..." className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500 resize-none"></textarea>
               </div>
               <div className="flex justify-end space-x-3 pt-2">
-                <button type="button" onClick={() => setIsPostJobOpen(false)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-500/25">Publish OJT Slot</button>
+                <button type="button" onClick={() => setIsPostJobOpen(false)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg">Publish OJT Slot</button>
               </div>
             </form>
           </div>
@@ -926,46 +928,46 @@ export default function App() {
       )}
 
       {isEditJobOpen && editingJob && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-800">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-slate-900">Edit OJT Listing</h3>
-              <button onClick={() => { setIsEditJobOpen(false); setEditingJob(null); }} className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600"><X className="w-4 h-4" /></button>
+              <h3 className="text-base font-bold text-white">Edit OJT Listing</h3>
+              <button onClick={() => { setIsEditJobOpen(false); setEditingJob(null); }} className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300"><X className="w-4 h-4" /></button>
             </div>
             <form onSubmit={handleEditJobSubmit} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Job Title</label>
-                <input type="text" required value={editingJob.title} onChange={(e) => setEditingJob({ ...editingJob, title: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
+                <label className="block text-xs font-bold text-slate-400 mb-1">Job Title</label>
+                <input type="text" required value={editingJob.title} onChange={(e) => setEditingJob({ ...editingJob, title: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Partner Company Name</label>
-                <input type="text" required value={editingJob.companyName} onChange={(e) => setEditingJob({ ...editingJob, companyName: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
+                <label className="block text-xs font-bold text-slate-400 mb-1">Partner Company Name</label>
+                <input type="text" required value={editingJob.companyName} onChange={(e) => setEditingJob({ ...editingJob, companyName: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Category</label>
-                  <select value={editingJob.category} onChange={(e) => setEditingJob({ ...editingJob, category: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none shadow-sm">
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Category</label>
+                  <select value={editingJob.category} onChange={(e) => setEditingJob({ ...editingJob, category: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none">
                     <option value="IT / Web Dev">IT / Web Dev</option>
                     <option value="Logistics">Logistics</option>
                     <option value="Healthcare">Healthcare</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Location</label>
-                  <input type="text" required value={editingJob.location} onChange={(e) => setEditingJob({ ...editingJob, location: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
+                  <label className="block text-xs font-bold text-slate-400 mb-1">Location</label>
+                  <input type="text" required value={editingJob.location} onChange={(e) => setEditingJob({ ...editingJob, location: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Stipend / Allowance</label>
-                <input type="text" required value={editingJob.stipend} onChange={(e) => setEditingJob({ ...editingJob, stipend: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm" />
+                <label className="block text-xs font-bold text-slate-400 mb-1">Stipend / Allowance</label>
+                <input type="text" required value={editingJob.stipend} onChange={(e) => setEditingJob({ ...editingJob, stipend: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Job Description</label>
-                <textarea required rows="3" value={editingJob.description} onChange={(e) => setEditingJob({ ...editingJob, description: e.target.value })} className="w-full px-4 py-2.5 bg-slate-50 rounded-xl text-xs text-slate-900 border border-slate-200 outline-none focus:border-blue-500 shadow-sm resize-none"></textarea>
+                <label className="block text-xs font-bold text-slate-400 mb-1">Job Description</label>
+                <textarea required rows="3" value={editingJob.description} onChange={(e) => setEditingJob({ ...editingJob, description: e.target.value })} className="w-full px-4 py-2.5 bg-slate-950 rounded-xl text-xs text-slate-100 border border-slate-800 outline-none focus:border-blue-500 resize-none"></textarea>
               </div>
               <div className="flex justify-end space-x-3 pt-2">
-                <button type="button" onClick={() => { setIsEditJobOpen(false); setEditingJob(null); }} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg shadow-blue-500/25">Save Changes</button>
+                <button type="button" onClick={() => { setIsEditJobOpen(false); setEditingJob(null); }} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg">Save Changes</button>
               </div>
             </form>
           </div>
