@@ -6,12 +6,20 @@ const API_BASE = "https://local-connect-api-t9jx.onrender.com";
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('local_connect_user')) || null);
   const [token, setToken] = useState(() => localStorage.getItem('local_connect_token') || '');
-  const [authMode, setAuthMode] = useState('login'); // 'login', 'register', 'forgot'
+  const [authMode, setAuthMode] = useState('login'); // 'login', 'register', 'partner', 'forgot'
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [role, setRole] = useState('student');
+  
+  // Partner application fields
+  const [compName, setCompName] = useState('');
+  const [compIndustry, setCompIndustry] = useState('');
+  const [compLocation, setCompLocation] = useState('');
+  const [compEmail, setCompEmail] = useState('');
+  const [compPassword, setCompPassword] = useState('');
+
   const [loginError, setLoginError] = useState('');
   const [loginSuccess, setLoginSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,7 +38,6 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [adminTab, setAdminTab] = useState('companies');
 
-  // Profile update state
   const [profileName, setProfileName] = useState(currentUser?.name || '');
   const [profileEmail, setProfileEmail] = useState(currentUser?.email || '');
   const [profilePassword, setProfilePassword] = useState('');
@@ -74,6 +81,20 @@ export default function App() {
           setPassword('');
         } else {
           setLoginError(data.error || 'Password reset failed.');
+        }
+      } else if (authMode === 'partner') {
+        const res = await fetch(`${API_BASE}/api/auth/partner-apply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: compName, industry: compIndustry, location: compLocation, email: compEmail, password: compPassword })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setLoginSuccess(data.message);
+          setAuthMode('login');
+          setCompName(''); setCompIndustry(''); setCompLocation(''); setCompEmail(''); setCompPassword('');
+        } else {
+          setLoginError(data.error || 'Partnership submission failed.');
         }
       } else {
         const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
@@ -254,8 +275,9 @@ export default function App() {
           {/* Auth Mode Toggle Tabs */}
           {authMode !== 'forgot' && (
             <div className="flex bg-slate-950 p-1 rounded-2xl border border-slate-800 mb-6">
-              <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${authMode === 'login' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Sign In</button>
-              <button onClick={() => { setAuthMode('register'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${authMode === 'register' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Create Account</button>
+              <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all ${authMode === 'login' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Sign In</button>
+              <button onClick={() => { setAuthMode('register'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all ${authMode === 'register' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Student Signup</button>
+              <button onClick={() => { setAuthMode('partner'); setLoginError(''); setLoginSuccess(''); }} className={`flex-1 py-2 text-[11px] font-bold rounded-xl transition-all ${authMode === 'partner' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Partner With Us</button>
             </div>
           )}
 
@@ -266,50 +288,103 @@ export default function App() {
             </div>
           )}
 
+          {authMode === 'partner' && (
+            <div className="mb-4 text-center">
+              <h3 className="text-sm font-bold text-emerald-400">Company Partnership Application</h3>
+              <p className="text-xs text-slate-400 mt-1">Submit your company details for admin review and approval.</p>
+            </div>
+          )}
+
           {loginError && <div className="mb-4 p-3 bg-red-950/60 text-red-400 rounded-xl text-xs font-semibold border border-red-900/50 text-center flex items-center justify-center gap-2"><AlertCircle className="w-4 h-4" /><span>{loginError}</span></div>}
           {loginSuccess && <div className="mb-4 p-3 bg-emerald-950/60 text-emerald-400 rounded-xl text-xs font-semibold border border-emerald-900/50 text-center flex items-center justify-center gap-2"><CheckCircle className="w-4 h-4" /><span>{loginSuccess}</span></div>}
           
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             {authMode === 'register' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name / Entity Name</label>
-                <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. John Doe / Tech Corp" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
-              </div>
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+                  <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. John Doe" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. student@icct.edu.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+                  <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                </div>
+                <input type="hidden" value="student" />
+              </>
             )}
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. admin@localnet.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
-            </div>
-            {authMode !== 'forgot' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
-                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
-              </div>
+
+            {authMode === 'partner' && (
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Company Name</label>
+                  <input type="text" required value={compName} onChange={(e) => setCompName(e.target.value)} placeholder="e.g. Tech Corp" className="w-full px-3.5 py-2.5 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-emerald-500 text-xs outline-none text-slate-100" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Industry</label>
+                    <input type="text" required value={compIndustry} onChange={(e) => setCompIndustry(e.target.value)} placeholder="e.g. IT / Logistics" className="w-full px-3.5 py-2.5 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-emerald-500 text-xs outline-none text-slate-100" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Location</label>
+                    <input type="text" required value={compLocation} onChange={(e) => setCompLocation(e.target.value)} placeholder="e.g. Marikina" className="w-full px-3.5 py-2.5 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-emerald-500 text-xs outline-none text-slate-100" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">HR Contact Email</label>
+                  <input type="email" required value={compEmail} onChange={(e) => setCompEmail(e.target.value)} placeholder="e.g. hr@techcorp.com" className="w-full px-3.5 py-2.5 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-emerald-500 text-xs outline-none text-slate-100" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+                  <input type="password" required value={compPassword} onChange={(e) => setCompPassword(e.target.value)} placeholder="••••••••" className="w-full px-3.5 py-2.5 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-emerald-500 text-xs outline-none text-slate-100" />
+                </div>
+              </>
             )}
+
+            {authMode === 'login' && (
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. admin@localnet.ph" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+                  <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                </div>
+              </>
+            )}
+
             {authMode === 'forgot' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">New Password</label>
-                <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
-              </div>
+              <>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e.g. hr@company.com" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">New Password</label>
+                  <input type="password" required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all" />
+                </div>
+              </>
             )}
-            {authMode === 'register' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Account Role</label>
-                <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all">
-                  <option value="student">Student / Intern</option>
-                  <option value="employer">Employer / Partner Company</option>
-                </select>
-              </div>
-            )}
-            <button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/25 text-sm mt-2 disabled:opacity-50">{isSubmitting ? 'Processing...' : (authMode === 'login' ? 'Sign In to Portal' : authMode === 'register' ? 'Register New Account' : 'Reset Password')}</button>
+
+            <button type="submit" disabled={isSubmitting} className={`w-full font-bold py-3 rounded-xl transition-all shadow-lg text-sm mt-2 disabled:opacity-50 ${authMode === 'partner' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/25' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/25'}`}>
+              {isSubmitting ? 'Processing...' : (authMode === 'login' ? 'Sign In to Portal' : authMode === 'register' ? 'Register Student Account' : authMode === 'partner' ? 'Submit Partnership Application' : 'Reset Password')}
+            </button>
           </form>
 
-          {/* Forgot Password Link */}
+          {/* Forgot Password / Switch Links */}
           <div className="mt-4 text-center">
-            {authMode === 'login' ? (
+            {authMode === 'login' && (
               <button onClick={() => { setAuthMode('forgot'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-blue-400 hover:underline">Forgot password?</button>
-            ) : (
+            )}
+            {authMode !== 'login' && authMode !== 'partner' && (
               <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-slate-400 hover:text-white">Back to Sign In</button>
+            )}
+            {authMode === 'partner' && (
+              <button onClick={() => { setAuthMode('login'); setLoginError(''); setLoginSuccess(''); }} className="text-xs text-slate-400 hover:text-white">Already approved? Sign In</button>
             )}
           </div>
         </div>
@@ -344,7 +419,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* Notifications Drawer / Dropdown */}
+      {/* Notifications Drawer */}
       {isNotificationsOpen && (
         <div className="absolute right-4 top-20 w-80 bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-800 z-50 p-4">
           <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800">
@@ -406,7 +481,7 @@ export default function App() {
             <p className="mt-2 text-blue-100 text-sm">Discover verified local internships and entry-level positions tailored for IT students.</p>
           </div>
 
-          {/* Futuristic OJT Program & Hours Tracker Card */}
+          {/* OJT Hours Tracker Card */}
           <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-xl mb-8">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-6">
               <div>
@@ -417,7 +492,6 @@ export default function App() {
                 <h3 className="text-lg font-extrabold text-white">Select Required Program Target</h3>
               </div>
               
-              {/* Futuristic Hour Tier Selector Pills */}
               <div className="flex items-center bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shadow-inner">
                 {[243, 400, 600].map((tier) => {
                   const isActive = (currentUser.totalRequiredHours || 500) === tier;
@@ -426,9 +500,7 @@ export default function App() {
                       key={tier}
                       onClick={() => updateTargetHours(tier)}
                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${
-                        isActive 
-                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 scale-105' 
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                        isActive ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 scale-105' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                       }`}
                     >
                       {tier} Hours
@@ -440,12 +512,8 @@ export default function App() {
 
             <div className="bg-slate-950/80 rounded-2xl p-5 border border-slate-800/80">
               <div className="flex justify-between items-center mb-3">
-                <span className="text-xs font-bold text-blue-400">
-                  {currentUser.completedHours || 120} / {currentUser.totalRequiredHours || 500} Hours Completed
-                </span>
-                <span className="text-xs font-bold text-slate-400">
-                  {Math.min(100, Math.round(((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100))}% Finished
-                </span>
+                <span className="text-xs font-bold text-blue-400">{currentUser.completedHours || 120} / {currentUser.totalRequiredHours || 500} Hours Completed</span>
+                <span className="text-xs font-bold text-slate-400">{Math.min(100, Math.round(((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100))}% Finished</span>
               </div>
               <div className="w-full bg-slate-900 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-800">
                 <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-500 shadow-lg shadow-blue-500/50" style={{ width: `${Math.min(100, ((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
@@ -561,7 +629,7 @@ export default function App() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
             <div>
               <h2 className="text-2xl font-bold text-white">Admin Control Panel</h2>
-              <p className="text-xs text-slate-400 mt-1">Manage partner companies, verifications, and platform job listings.</p>
+              <p className="text-xs text-slate-400 mt-1">Approve partner companies and manage platform job listings.</p>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => setIsPostJobOpen(true)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-lg shadow-emerald-600/20"><PlusCircle className="w-4 h-4" /><span>Post Opening</span></button>
@@ -570,22 +638,22 @@ export default function App() {
           </div>
 
           <div className="flex space-x-2 mb-6 border-b border-slate-800 pb-4">
-            <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-900 text-slate-400 hover:text-white'}`}>Partner Companies</button>
+            <button onClick={() => setAdminTab('companies')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'companies' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-900 text-slate-400 hover:text-white'}`}>Partner Company Requests ({companies.length})</button>
             <button onClick={() => setAdminTab('listings')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${adminTab === 'listings' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : 'bg-slate-900 text-slate-400 hover:text-white'}`}>Platform Job Listings ({jobs.length})</button>
           </div>
 
           {adminTab === 'companies' && (
             <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
-              <div className="px-6 py-4 border-b border-slate-800 bg-slate-950 font-bold text-sm text-slate-200">Partner Company Verifications</div>
+              <div className="px-6 py-4 border-b border-slate-800 bg-slate-950 font-bold text-sm text-slate-200">Partner Company Applications & Approvals</div>
               <div className="divide-y divide-slate-800">
                 {companies.map(comp => (
                   <div key={comp.id} className="p-5 flex items-center justify-between">
                     <div>
                       <h4 className="font-bold text-white text-sm">{comp.name}</h4>
-                      <p className="text-xs text-slate-400">{comp.industry} • {comp.location} • Status: <strong className={comp.status === 'Verified' ? 'text-emerald-400' : 'text-amber-400'}>{comp.status}</strong></p>
+                      <p className="text-xs text-slate-400">{comp.industry} • {comp.location} • Email: {comp.email || 'N/A'} • Status: <strong className={comp.status === 'Verified' ? 'text-emerald-400' : 'text-amber-400'}>{comp.status}</strong></p>
                     </div>
                     {comp.status !== 'Verified' && (
-                      <button onClick={() => handleVerifyCompany(comp.id)} className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 border border-emerald-900/50 text-xs font-semibold rounded-xl transition-colors">Verify Company</button>
+                      <button onClick={() => handleVerifyCompany(comp.id)} className="px-3 py-1.5 bg-emerald-950/60 hover:bg-emerald-900 text-emerald-400 border border-emerald-900/50 text-xs font-semibold rounded-xl transition-colors">Approve & Unlock Account</button>
                     )}
                   </div>
                 ))}

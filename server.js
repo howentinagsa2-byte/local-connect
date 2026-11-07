@@ -43,13 +43,13 @@ const upload = multer({
 let db = {
   users: [
     { id: '1', name: 'Owen (Student)', email: 'student@icct.edu.ph', password: 'password123', role: 'student', status: 'active', completedHours: 120, totalRequiredHours: 500 },
-    { id: '2', name: 'TechSolutions HR', email: 'hr@techsolutions.com', password: 'password123', role: 'employer', status: 'verified' },
+    { id: '2', name: 'TechSolutions Inc.', email: 'hr@techsolutions.com', password: 'password123', role: 'employer', status: 'Verified' },
     { id: '3', name: 'Placement Coordinator', email: 'admin@localnet.ph', password: 'password123', role: 'admin', status: 'active' }
   ],
   companies: [
-    { id: 1, employerId: '2', name: 'TechSolutions Inc.', industry: 'Information Technology', location: 'San Mateo, Rizal', status: 'Verified', dateApplied: '2026-09-01' },
-    { id: 2, employerId: '4', name: 'Apex Logistics & Transport', industry: 'Logistics', location: 'Antipolo City', status: 'Pending Review', dateApplied: '2026-10-12' },
-    { id: 3, employerId: '5', name: 'Greenfield Health Systems', industry: 'Healthcare', location: 'Marikina City', status: 'Pending Review', dateApplied: '2026-10-14' }
+    { id: 1, employerId: '2', name: 'TechSolutions Inc.', industry: 'Information Technology', location: 'San Mateo, Rizal', status: 'Verified', dateApplied: '2026-09-01', email: 'hr@techsolutions.com' },
+    { id: 2, employerId: '4', name: 'Apex Logistics & Transport', industry: 'Logistics', location: 'Antipolo City', status: 'Pending Review', dateApplied: '2026-10-12', email: 'apex@logistics.com' },
+    { id: 3, employerId: '5', name: 'Greenfield Health Systems', industry: 'Healthcare', location: 'Marikina City', status: 'Pending Review', dateApplied: '2026-10-14', email: 'hr@greenfield.com' }
   ],
   jobs: [
     {
@@ -98,6 +98,7 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// User Registration
 app.post('/api/auth/register', (req, res) => {
   const { name, email, password, role } = req.body;
   if (!name || !email || !password || !role) {
@@ -119,24 +120,12 @@ app.post('/api/auth/register', (req, res) => {
     email,
     password,
     role,
-    status: role === 'employer' ? 'Pending Review' : 'active',
+    status: 'active',
     completedHours: role === 'student' ? 0 : undefined,
     totalRequiredHours: role === 'student' ? 500 : undefined
   };
 
   db.users.push(newUser);
-
-  if (role === 'employer') {
-    db.companies.push({
-      id: Date.now(),
-      employerId: newUser.id,
-      name: name,
-      industry: 'General Services',
-      location: 'Local Region',
-      status: 'Pending Review',
-      dateApplied: new Date().toISOString().split('T')[0]
-    });
-  }
 
   const token = jwt.sign(
     { userId: newUser.id, role: newUser.role, name: newUser.name, email: newUser.email },
@@ -158,10 +147,62 @@ app.post('/api/auth/register', (req, res) => {
   });
 });
 
+// Partner Company Application (Requires Admin Approval Before Login)
+app.post('/api/auth/partner-apply', (req, res) => {
+  const { name, industry, location, email, password } = req.body;
+  if (!name || !industry || !location || !email || !password) {
+    return res.status(400).json({ error: 'All partnership fields are required.' });
+  }
+
+  const existingComp = db.companies.find(c => c.email === email);
+  if (existingComp) {
+    return res.status(400).json({ error: 'A partnership application with this email already exists.' });
+  }
+
+  const newCompanyId = Date.now();
+  db.companies.push({
+    id: newCompanyId,
+    employerId: String(newCompanyId),
+    name,
+    industry,
+    location,
+    status: 'Pending Review',
+    dateApplied: new Date().toISOString().split('T')[0],
+    email,
+    password
+  });
+
+  res.status(201).json({ message: 'Partnership application submitted successfully! Please wait for admin approval before logging in.' });
+});
+
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
-  const user = db.users.find(u => u.email === email && u.password === password);
-  if (!user) return res.status(401).json({ error: 'Invalid credentials. Please check your email or password.' });
+  
+  // Check users table first
+  let user = db.users.find(u => u.email === email && u.password === password);
+  
+  if (!user) {
+    // Check if trying to log in as an employer whose company was verified
+    const company = db.companies.find(c => c.email === email && c.password === password);
+    if (company) {
+      if (company.status !== 'Verified') {
+        return res.status(403).json({ error: 'Your partnership application is still Pending Review by admin.' });
+      }
+      // Auto-register into users if approved
+      user = {
+        id: company.employerId,
+        name: company.name,
+        email: company.email,
+        role: 'employer',
+        status: 'Verified'
+      };
+      if (!db.users.find(u => u.email === email)) {
+        db.users.push({ ...user, password: company.password });
+      }
+    }
+  }
+
+  if (!user) return res.status(401).json({ error: 'Invalid credentials or partnership not yet approved.' });
 
   const token = jwt.sign(
     { userId: user.id, role: user.role, name: user.name, email: user.email },
@@ -183,18 +224,21 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
-// Forgot Password Endpoint
 app.post('/api/auth/forgot-password', (req, res) => {
   const { email, newPassword } = req.body;
   const user = db.users.find(u => u.email === email);
   if (!user) {
+    const comp = db.companies.find(c => c.email === email);
+    if (comp) {
+      comp.password = newPassword;
+      return res.json({ message: 'Password updated successfully! You can now sign in once approved.' });
+    }
     return res.status(404).json({ error: 'Email address not found in our system.' });
   }
   user.password = newPassword;
   res.json({ message: 'Password updated successfully! You can now sign in with your new password.' });
 });
 
-// Update Profile Endpoint
 app.patch('/api/auth/profile', authenticateToken, (req, res) => {
   const { name, email, newPassword } = req.body;
   const user = db.users.find(u => u.id === req.user.userId);
