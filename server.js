@@ -1,4 +1,4 @@
-// server.js - Complete Full-Stack Express Backend with Email-Specific Notifications & Scoped Employer Applications
+// server.js - Complete Full-Stack Express Backend (Admin-only job posting, email-scoped notifications & filtered employer applicants)
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -43,7 +43,7 @@ const loadDb = () => {
       jobs: [
         {
           id: 1,
-          employerId: '2',
+          employerId: '3',
           companyName: 'TechSolutions Inc.',
           title: 'Junior Software Engineer (OJT)',
           category: 'IT / Web Dev',
@@ -327,21 +327,22 @@ app.get('/api/jobs', (req, res) => {
   res.json(db.jobs);
 });
 
+// STRICT ADMIN-ONLY JOB POSTING
 app.post('/api/jobs', authenticateToken, (req, res) => {
   const db = loadDb();
-  if (req.user.role !== 'admin' && req.user.role !== 'employer') return res.status(403).json({ error: 'Unauthorized' });
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Unauthorized: Only the admin can publish OJT job postings.' });
+  }
   
   const { title, companyName, category, type, mode, location, stipend, description } = req.body;
-  const resolvedCompany = req.user.role === 'employer' ? req.user.name : (companyName || 'Admin Official Posting');
-
-  if (!title || !description) {
-    return res.status(400).json({ error: 'Job title and description are required fields.' });
+  if (!title || !companyName || !description) {
+    return res.status(400).json({ error: 'Job title, company name, and description are required fields.' });
   }
 
   const newJob = {
     id: Date.now(),
     employerId: req.user.userId,
-    companyName: resolvedCompany,
+    companyName,
     title,
     category: category || 'General / OJT',
     type: type || 'OJT / Internship',
@@ -355,19 +356,14 @@ app.post('/api/jobs', authenticateToken, (req, res) => {
 
   db.jobs.unshift(newJob);
   saveDb(db);
-  res.status(201).json({ message: 'Job posted successfully', job: newJob });
+  res.status(201).json({ message: 'Job posted successfully by Admin', job: newJob });
 });
 
 app.delete('/api/jobs/:id', authenticateToken, (req, res) => {
   const db = loadDb();
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
   const jobId = parseInt(req.params.id);
-  const job = db.jobs.find(j => j.id === jobId);
-  if (!job) return res.status(404).json({ error: 'Job not found' });
-
-  if (req.user.role !== 'admin' && job.employerId !== req.user.userId) {
-    return res.status(403).json({ error: 'Unauthorized' });
-  }
-
+  
   db.jobs = db.jobs.filter(j => j.id !== jobId);
   saveDb(db);
   res.json({ message: 'Job deleted successfully' });
@@ -398,8 +394,8 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
   };
   db.applications.unshift(newApp);
 
-  // Send notification ONLY to the specific employer email managing this company/job
-  const employerUser = db.users.find(u => u.name === targetJob.companyName || u.id === targetJob.employerId);
+  // Send notification strictly to the registered employer email matching the company name
+  const employerUser = db.companies.find(c => c.name === targetJob.companyName) || db.users.find(u => u.name === targetJob.companyName);
   const employerEmail = employerUser ? employerUser.email : null;
 
   if (employerEmail) {
@@ -417,7 +413,7 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
   res.status(201).json({ message: 'Application submitted', application: newApp });
 });
 
-// Employer Applications: Strict filtering so employers only see applications for their own company
+// Employer Applications: Strictly filtered so employers only see applicants who applied to their company name
 app.get('/api/applications/employer', authenticateToken, (req, res) => {
   const db = loadDb();
   if (req.user.role !== 'employer' && req.user.role !== 'admin') {
@@ -428,9 +424,9 @@ app.get('/api/applications/employer', authenticateToken, (req, res) => {
     return res.json(db.applications);
   }
 
-  // Filter applications where companyName matches the logged-in employer's name or jobs posted by this employer
-  const employerJobs = db.jobs.filter(j => j.employerId === req.user.userId || j.companyName === req.user.name).map(j => j.id);
-  const filteredApps = db.applications.filter(a => a.companyName === req.user.name || employerJobs.includes(a.jobId));
+  // Filter applications where companyName matches the employer's company name exactly
+  const employerCompanyName = req.user.name;
+  const filteredApps = db.applications.filter(a => a.companyName.toLowerCase() === employerCompanyName.toLowerCase());
   
   res.json(filteredApps);
 });
@@ -457,7 +453,6 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
   res.json({ message: 'Status updated and notification dispatched', application: appItem });
 });
 
-// Notifications strictly filtered by authenticated user's email
 app.get('/api/notifications', authenticateToken, (req, res) => {
   const db = loadDb();
   const userEmail = req.user.email;
