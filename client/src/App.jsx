@@ -94,7 +94,7 @@ export default function App() {
         setChatMessageText('');
         fetchMessages();
       }
-    } catch (err) { alert('Failed to send message.'); }
+    } catch (err) {}
   };
 
   const handleApplySubmit = async (e) => {
@@ -106,7 +106,7 @@ export default function App() {
     try {
       const res = await fetch(`${API_BASE}/api/applications`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
       if (res.ok) { alert('Application and resume submitted!'); setSelectedJobForApp(null); setResumeFile(null); fetchStudentApplications(); }
-    } catch (err) { alert('Failed to submit.'); }
+    } catch (err) {}
   };
 
   const handlePostJobSubmit = async (e) => {
@@ -118,7 +118,7 @@ export default function App() {
         body: JSON.stringify(newJob)
       });
       if (res.ok) { alert('Job posted!'); setIsPostJobOpen(false); fetchJobs(); }
-    } catch (err) { alert('Failed to post.'); }
+    } catch (err) {}
   };
 
   const handleDeleteJob = async (jobId) => {
@@ -242,6 +242,47 @@ export default function App() {
             <p className="mt-2 text-blue-100 text-sm">Discover verified local internships and entry-level positions tailored for IT students.</p>
           </div>
 
+          {/* RESTORED: OJT Hours Progress Tracker Card */}
+          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="w-full">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">OJT Internship Progress</span>
+                <span className="text-xs font-bold text-blue-600">
+                  {currentUser.completedHours || 120} / {currentUser.totalRequiredHours || 500} Hours Logged
+                </span>
+              </div>
+              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-blue-600 h-full rounded-full transition-all duration-500" 
+                  style={{ width: `${Math.min(100, ((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}
+                ></div>
+              </div>
+            </div>
+            <button 
+              onClick={async () => {
+                const hours = prompt("Enter hours to add (e.g., 8):", "8");
+                if (!hours || isNaN(hours)) return;
+                try {
+                  const res = await fetch(`${API_BASE}/api/student/hours`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ hoursToAdd: hours })
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    const updatedUser = { ...currentUser, completedHours: data.completedHours, totalRequiredHours: data.totalRequiredHours };
+                    setCurrentUser(updatedUser);
+                    localStorage.setItem('local_connect_user', JSON.stringify(updatedUser));
+                    alert('Hours updated successfully!');
+                  }
+                } catch (err) {}
+              }}
+              className="whitespace-nowrap px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition-colors shadow-sm"
+            >
+              + Log Daily Hours
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <aside className="lg:col-span-1 space-y-6">
               <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm sticky top-24">
@@ -299,7 +340,7 @@ export default function App() {
                     ))}
                   </div>
                   <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-200 flex gap-2">
-                    <input type="text" value={chatMessageText} onChange={(e) => setChatMessageText(e.target.value)} placeholder="Type a message to employer..." className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none" />
+                    <input type="text" value={chatMessageText} onChange={(e) => setChatMessageText(e.target.value)} placeholder="Type a message..." className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none" />
                     <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1"><Send className="w-3.5 h-3.5" /> Send</button>
                   </form>
                 </div>
@@ -315,6 +356,36 @@ export default function App() {
             <h2 className="text-2xl font-bold text-slate-900">Employer Recruitment Hub</h2>
             <button onClick={() => setIsPostJobOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-sm"><PlusCircle className="w-4 h-4" /><span>Post Opening</span></button>
           </div>
+
+          {/* RESTORED: Employer Active Job Listings Manager with Delete */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm mb-8">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-bold text-slate-900 text-sm">My Posted Job Listings</h3>
+              <span className="text-xs bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg font-semibold">{jobs.filter(j => j.employerId === currentUser.id || j.companyName === currentUser.name).length} Listings</span>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {jobs.filter(j => j.employerId === currentUser.id || j.companyName === currentUser.name).length === 0 ? (
+                <p className="text-xs text-slate-500 py-6 text-center">No listings posted yet.</p>
+              ) : (
+                jobs.filter(j => j.employerId === currentUser.id || j.companyName === currentUser.name).map(job => (
+                  <div key={job.id} className="p-5 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">{job.title}</h4>
+                      <p className="text-xs text-slate-500">{job.category} • {job.location} • <strong className="text-emerald-600">{job.stipend}</strong></p>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteJob(job.id)}
+                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-xl flex items-center space-x-1 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Listing</span>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 font-bold text-sm">Student Applicants & Chat</div>
             <div className="divide-y divide-slate-100">
@@ -325,10 +396,43 @@ export default function App() {
                     <p className="text-xs text-slate-500">Applied for: {appItem.jobTitle} ({appItem.status})</p>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <button onClick={() => setViewResumeUrl(`${API_BASE}${appItem.resumeUrl}`)} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-semibold flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> Resume</button>
                     <button onClick={() => { setChatRecipient({ id: appItem.studentId, name: appItem.studentName }); setActiveTab('messages'); }} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-semibold flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> Chat</button>
                     <button onClick={() => handleUpdateAppStatus(appItem.id, 'Interview Scheduled')} className="px-3 py-1.5 bg-purple-50 text-purple-700 text-xs font-semibold rounded-xl">Interview</button>
                     <button onClick={() => handleUpdateAppStatus(appItem.id, 'Hired')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl">Hire</button>
                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      )}
+
+      {currentUser.role === 'admin' && (
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold text-slate-900">Placement Coordinator Admin Portal</h2>
+            <button onClick={handleExportCSV} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm"><Download className="w-4 h-4" /> Export Report (CSV)</button>
+          </div>
+          
+          {/* RESTORED: Admin Employer Verification Queue with Approve Button */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 font-bold text-sm">Employer Verification Queue</div>
+            <div className="divide-y divide-slate-100">
+              {companies.map((company) => (
+                <div key={company.id} className="p-6 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h4 className="font-bold text-slate-900 text-sm">{company.name}</h4>
+                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${company.status === 'Verified' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{company.status}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">{company.industry} • {company.location}</p>
+                  </div>
+                  {company.status !== 'Verified' && (
+                    <button onClick={() => handleVerifyCompany(company.id)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1 shadow-sm">
+                      <Check className="w-3.5 h-3.5" /> Approve Verification
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -357,7 +461,22 @@ export default function App() {
         </div>
       )}
 
-      {/* Standard Modals for Job Application & Posting */}
+      {/* Resume Viewer Modal */}
+      {viewResumeUrl && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white max-w-4xl w-full h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2"><FileText className="w-5 h-5 text-blue-600" /> Resume Preview</h3>
+              <button onClick={() => setViewResumeUrl(null)}><X className="w-5 h-5" /></button>
+            </div>
+            <div className="flex-1 bg-slate-100 p-4">
+              <iframe src={viewResumeUrl} className="w-full h-full rounded-2xl border border-slate-200 bg-white" title="Resume Preview" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Apply Modal */}
       {selectedJobForApp && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white max-w-md w-full rounded-3xl p-6 shadow-2xl">
@@ -367,6 +486,25 @@ export default function App() {
               <div className="flex justify-end gap-2">
                 <button type="button" onClick={() => setSelectedJobForApp(null)} className="px-4 py-2 text-xs">Cancel</button>
                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Post Job Modal */}
+      {isPostJobOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white max-w-lg w-full rounded-3xl p-6 shadow-2xl">
+            <h3 className="text-base font-bold mb-4">Post New Opening</h3>
+            <form onSubmit={handlePostJobSubmit} className="space-y-3">
+              <input type="text" required value={newJob.title} onChange={(e) => setNewJob({...newJob, title: e.target.value})} placeholder="Job Title" className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs" />
+              <input type="text" required value={newJob.location} onChange={(e) => setNewJob({...newJob, location: e.target.value})} placeholder="Location" className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs" />
+              <input type="text" required value={newJob.stipend} onChange={(e) => setNewJob({...newJob, stipend: e.target.value})} placeholder="Stipend" className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs" />
+              <textarea rows="3" required value={newJob.description} onChange={(e) => setNewJob({...newJob, description: e.target.value})} placeholder="Description" className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs" />
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setIsPostJobOpen(false)} className="px-4 py-2 text-xs">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs">Publish</button>
               </div>
             </form>
           </div>

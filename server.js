@@ -132,7 +132,9 @@ app.patch('/api/student/hours', authenticateToken, (req, res) => {
   if (!user) return res.status(404).json({ error: 'User not found' });
 
   user.completedHours = (user.completedHours || 120) + parseInt(hoursToAdd || 0);
-  res.json({ message: 'Hours updated successfully', completedHours: user.completedHours, totalRequiredHours: user.totalRequiredHours || 500 });
+  user.totalRequiredHours = user.totalRequiredHours || 500;
+
+  res.json({ message: 'Hours updated successfully', completedHours: user.completedHours, totalRequiredHours: user.totalRequiredHours });
 });
 
 app.get('/api/jobs', (req, res) => res.json(db.jobs));
@@ -194,8 +196,6 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
   if (!appItem) return res.status(404).json({ error: 'Application not found' });
 
   appItem.status = status;
-
-  // Simulate sending email notification
   db.notifications.unshift({
     id: Date.now(),
     recipientEmail: appItem.studentEmail,
@@ -208,11 +208,9 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
   res.json({ message: 'Status updated and email notification dispatched', application: appItem });
 });
 
-// --- MESSAGING ENDPOINTS ---
 app.get('/api/messages', authenticateToken, (req, res) => {
   const userId = req.user.userId;
-  const userMessages = db.messages.filter(m => m.senderId === userId || m.recipientId === userId);
-  res.json(userMessages);
+  res.json(db.messages.filter(m => m.senderId === userId || m.recipientId === userId));
 });
 
 app.post('/api/messages', authenticateToken, (req, res) => {
@@ -221,7 +219,7 @@ app.post('/api/messages', authenticateToken, (req, res) => {
     id: Date.now(),
     senderId: req.user.userId,
     senderName: req.user.name,
-    recipientId: recipientId,
+    recipientId,
     text,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   };
@@ -229,10 +227,8 @@ app.post('/api/messages', authenticateToken, (req, res) => {
   res.status(201).json({ message: 'Message sent', data: newMessage });
 });
 
-// --- EMAIL NOTIFICATIONS ENDPOINT ---
 app.get('/api/notifications', authenticateToken, (req, res) => {
-  const userNotifs = db.notifications.filter(n => n.recipientEmail === req.user.email);
-  res.json(userNotifs);
+  res.json(db.notifications.filter(n => n.recipientEmail === req.user.email));
 });
 
 app.get('/api/admin/export-csv', authenticateToken, (req, res) => {
@@ -247,11 +243,12 @@ app.get('/api/admin/export-csv', authenticateToken, (req, res) => {
 });
 
 app.get('/api/admin/companies', authenticateToken, (req, res) => res.json(db.companies));
+
 app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
   const company = db.companies.find(c => c.id === parseInt(req.params.id));
   if (!company) return res.status(404).json({ error: 'Company not found' });
   company.status = 'Verified';
-  res.json({ message: 'Verified', company });
+  res.json({ message: 'Company verified successfully', company });
 });
 
 const PORT = process.env.PORT || 5000;
