@@ -229,7 +229,6 @@ export default function App() {
                 <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full px-4 py-3 bg-slate-950/80 rounded-xl border border-slate-800 focus:border-blue-500 text-sm outline-none text-slate-100 transition-all">
                   <option value="student">Student / Intern</option>
                   <option value="employer">Employer / Partner Company</option>
-                  <option value="admin">Administrator</option>
                 </select>
               </div>
             )}

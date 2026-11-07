@@ -104,6 +104,11 @@ app.post('/api/auth/register', (req, res) => {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
+  // STRICT SECURITY CHECK: Only allow your authorized email to register as admin
+  if (role === 'admin' && email !== 'admin@localconnect.gov.ph') {
+    return res.status(403).json({ error: 'Unauthorized: Admin registration is restricted.' });
+  }
+
   const existingUser = db.users.find(u => u.email === email);
   if (existingUser) {
     return res.status(400).json({ error: 'Email is already registered.' });
