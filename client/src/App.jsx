@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import io from 'socket.io-client';
-import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, MessageSquare, Send, Mail } from 'lucide-react';
+import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, Mail } from 'lucide-react';
 
-const API_BASE = "http://localhost:5000"; // Or your Render backend URL
-const socket = io(API_BASE);
+const API_BASE = "http://localhost:5000";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('local_connect_user')) || null);
@@ -16,7 +14,6 @@ export default function App() {
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [companies, setCompanies] = useState([]);
-  const [messages, setMessages] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -25,27 +22,10 @@ export default function App() {
   const [isPostJobOpen, setIsPostJobOpen] = useState(false);
   const [resumeFile, setResumeFile] = useState(null);
   const [viewResumeUrl, setViewResumeUrl] = useState(null);
-  const [chatRecipient, setChatRecipient] = useState(null);
-  const [chatMessageText, setChatMessageText] = useState('');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [newJob, setNewJob] = useState({ title: '', companyName: '', category: 'IT / Web Dev', type: 'OJT / Internship', mode: 'On-site', location: '', stipend: '', description: '' });
 
-  useEffect(() => {
-    fetchJobs();
-    fetch(`${API_BASE}/api/messages`)
-      .then(res => res.json())
-      .then(data => setMessages(data))
-      .catch(() => {});
-
-    socket.on('receive_message', (incomingMsg) => {
-      setMessages(prev => [...prev, incomingMsg]);
-    });
-
-    return () => {
-      socket.off('receive_message');
-    };
-  }, []);
-
+  useEffect(() => { fetchJobs(); }, []);
   useEffect(() => {
     if (currentUser && token) {
       if (currentUser.role === 'student') fetchStudentApplications();
@@ -94,19 +74,6 @@ export default function App() {
     localStorage.removeItem('local_connect_token');
     setEmail('');
     setPassword('');
-  };
-
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!chatRecipient || !chatMessageText.trim()) return;
-
-    socket.emit('send_message', {
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      recipientId: chatRecipient.id,
-      text: chatMessageText
-    });
-    setChatMessageText('');
   };
 
   const handleApplySubmit = async (e) => {
@@ -301,7 +268,6 @@ export default function App() {
                 <nav className="space-y-1 mb-6">
                   <button onClick={() => setActiveTab('browse')} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'browse' ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}><div className="flex items-center space-x-3"><Search className="w-4 h-4" /><span>Browse Jobs</span></div><ChevronRight className="w-4 h-4 opacity-50" /></button>
                   <button onClick={() => setActiveTab('applications')} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'applications' ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}><div className="flex items-center space-x-3"><FileText className="w-4 h-4" /><span>My Applications</span></div><ChevronRight className="w-4 h-4 opacity-50" /></button>
-                  <button onClick={() => setActiveTab('messages')} className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === 'messages' ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}><div className="flex items-center space-x-3"><MessageSquare className="w-4 h-4" /><span>Messages</span></div><ChevronRight className="w-4 h-4 opacity-50" /></button>
                 </nav>
               </div>
             </aside>
@@ -332,28 +298,8 @@ export default function App() {
                         <h4 className="text-sm font-bold text-slate-900">{app.jobTitle}</h4>
                         <p className="text-xs text-slate-500">{app.companyName} • Status: <strong className="text-blue-600">{app.status}</strong></p>
                       </div>
-                      <button onClick={() => { setChatRecipient({ id: '2', name: app.companyName }); setActiveTab('messages'); }} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-semibold flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> Chat HR</button>
                     </div>
                   ))}
-                </div>
-              )}
-              {activeTab === 'messages' && (
-                <div className="bg-white rounded-2xl border border-slate-200/80 h-[500px] flex flex-col overflow-hidden shadow-sm">
-                  <div className="p-4 bg-slate-50 border-b border-slate-200 font-bold text-sm text-slate-900">Live Chat with HR / Employer</div>
-                  <div className="flex-1 p-4 overflow-y-auto space-y-3">
-                    {messages.filter(m => m.senderId === currentUser.id || m.recipientId === currentUser.id).map(m => (
-                      <div key={m.id} className={`flex flex-col ${m.senderId === currentUser.id ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl text-xs ${m.senderId === currentUser.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-800'}`}>
-                          <p>{m.text}</p>
-                          <span className="text-[9px] opacity-70 mt-1 block text-right">{m.timestamp}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-200 flex gap-2">
-                    <input type="text" value={chatMessageText} onChange={(e) => setChatMessageText(e.target.value)} placeholder="Type a message..." className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none" />
-                    <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1"><Send className="w-3.5 h-3.5" /> Send</button>
-                  </form>
                 </div>
               )}
             </section>
@@ -396,55 +342,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm lg:col-span-1">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Applicants & Chats</h3>
-              <div className="space-y-2">
-                {applications.map(app => (
-                  <button
-                    key={app.id}
-                    onClick={() => setChatRecipient({ id: app.studentId, name: app.studentName })}
-                    className={`w-full p-3 rounded-xl text-left transition-all flex items-center justify-between ${chatRecipient?.id === app.studentId ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-100'}`}
-                  >
-                    <div>
-                      <p className="text-xs font-bold">{app.studentName}</p>
-                      <p className="text-[10px] opacity-80">{app.jobTitle}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200/80 h-[500px] flex flex-col overflow-hidden shadow-sm lg:col-span-2">
-              <div className="p-4 bg-slate-50 border-b border-slate-200 font-bold text-sm text-slate-900">
-                Chat with: {chatRecipient ? chatRecipient.name : 'Select an applicant from the left'}
-              </div>
-              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/30">
-                {!chatRecipient ? (
-                  <p className="text-xs text-slate-400 text-center py-20">Click an applicant to chat directly.</p>
-                ) : (
-                  messages
-                    .filter(m => (m.senderId === currentUser.id && m.recipientId === chatRecipient.id) || (m.senderId === chatRecipient.id && m.recipientId === currentUser.id))
-                    .map(m => (
-                      <div key={m.id} className={`flex flex-col ${m.senderId === currentUser.id ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl text-xs ${m.senderId === currentUser.id ? 'bg-blue-600 text-white' : 'bg-white text-slate-800 border border-slate-200 shadow-sm'}`}>
-                          <p>{m.text}</p>
-                          <span className="text-[9px] opacity-70 mt-1 block text-right">{m.timestamp}</span>
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
-              {chatRecipient && (
-                <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-200 flex gap-2 bg-white">
-                  <input type="text" value={chatMessageText} onChange={(e) => setChatMessageText(e.target.value)} placeholder={`Reply to ${chatRecipient.name}...`} className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none" />
-                  <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1"><Send className="w-3.5 h-3.5" /> Send</button>
-                </form>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm mt-8">
+          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 font-bold text-sm">Manage Applicant Status</div>
             <div className="divide-y divide-slate-100">
               {applications.map(appItem => (

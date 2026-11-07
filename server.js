@@ -1,7 +1,5 @@
-// server.js - Complete Full-Stack Express Backend with Socket.io Real-Time Messaging
+// server.js - Complete Full-Stack Express Backend (Messaging Removed)
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
@@ -9,16 +7,13 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PATCH', 'DELETE']
-  }
-});
-
 app.use(express.json());
-app.use(cors({ origin: '*', credentials: true }));
+
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const uploadDir = path.join(__dirname, 'uploads');
@@ -82,35 +77,10 @@ let db = {
       resumeUrl: '/uploads/sample_resume.pdf'
     }
   ],
-  messages: [
-    { id: 1, senderId: '2', senderName: 'TechSolutions HR', recipientId: '1', text: 'Hello Owen, we reviewed your resume for the Junior Software Engineer OJT position. Let us schedule your technical interview!', timestamp: '10:30 AM' }
-  ],
   notifications: [
     { id: 1, recipientEmail: 'student@icct.edu.ph', subject: 'Application Status Update', body: 'Your application for Junior Software Engineer (OJT) has been updated to: Interview Scheduled.', timestamp: '10:28 AM', read: false }
   ]
 };
-
-// WebSocket Real-Time Connection
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-
-  socket.on('send_message', (data) => {
-    const newMessage = {
-      id: Date.now(),
-      senderId: String(data.senderId),
-      senderName: data.senderName,
-      recipientId: String(data.recipientId),
-      text: data.text,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    db.messages.push(newMessage);
-    io.emit('receive_message', newMessage);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
-});
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -232,10 +202,6 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
   res.json({ message: 'Status updated and email notification dispatched', application: appItem });
 });
 
-app.get('/api/messages', authenticateToken, (req, res) => {
-  res.json(db.messages);
-});
-
 app.get('/api/notifications', authenticateToken, (req, res) => {
   res.json(db.notifications.filter(n => n.recipientEmail === req.user.email));
 });
@@ -261,4 +227,4 @@ app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Backend with Socket.io running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
