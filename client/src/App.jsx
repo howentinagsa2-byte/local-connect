@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, Mail } from 'lucide-react';
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = "https://local-connect-api-t9jx.onrender.com";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('local_connect_user')) || null);
@@ -341,51 +341,27 @@ export default function App() {
               )}
             </div>
           </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 font-bold text-sm">Manage Applicant Status</div>
-            <div className="divide-y divide-slate-100">
-              {applications.map(appItem => (
-                <div key={appItem.id} className="p-6 flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-slate-900 text-sm">{appItem.studentName}</h4>
-                    <p className="text-xs text-slate-500">Applied for: {appItem.jobTitle} ({appItem.status})</p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button onClick={() => setViewResumeUrl(`${API_BASE}${appItem.resumeUrl}`)} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-semibold flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> Resume</button>
-                    <button onClick={() => handleUpdateAppStatus(appItem.id, 'Interview Scheduled')} className="px-3 py-1.5 bg-purple-50 text-purple-700 text-xs font-semibold rounded-xl">Interview</button>
-                    <button onClick={() => handleUpdateAppStatus(appItem.id, 'Hired')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl">Hire</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </main>
       )}
 
       {currentUser.role === 'admin' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-slate-900">Placement Coordinator Admin Portal</h2>
-            <button onClick={handleExportCSV} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm"><Download className="w-4 h-4" /> Export Report (CSV)</button>
+            <h2 className="text-2xl font-bold text-slate-900">Admin Control Panel</h2>
+            <button onClick={handleExportCSV} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-sm"><Download className="w-4 h-4" /><span>Export CSV Report</span></button>
           </div>
-          
+
           <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 font-bold text-sm">Employer Verification Queue</div>
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 font-bold text-sm">Partner Company Verifications</div>
             <div className="divide-y divide-slate-100">
-              {companies.map((company) => (
-                <div key={company.id} className="p-6 flex items-center justify-between">
+              {companies.map(comp => (
+                <div key={comp.id} className="p-5 flex items-center justify-between">
                   <div>
-                    <div className="flex items-center space-x-2">
-                      <h4 className="font-bold text-slate-900 text-sm">{company.name}</h4>
-                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${company.status === 'Verified' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{company.status}</span>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">{company.industry} • {company.location}</p>
+                    <h4 className="font-bold text-slate-900 text-sm">{comp.name}</h4>
+                    <p className="text-xs text-slate-500">{comp.industry} • {comp.location} • Status: <strong className={comp.status === 'Verified' ? 'text-emerald-600' : 'text-amber-600'}>{comp.status}</strong></p>
                   </div>
-                  {company.status !== 'Verified' && (
-                    <button onClick={() => handleVerifyCompany(company.id)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1 shadow-sm">
-                      <Check className="w-3.5 h-3.5" /> Approve Verification
-                    </button>
+                  {comp.status !== 'Verified' && (
+                    <button onClick={() => handleVerifyCompany(comp.id)} className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-xl transition-colors">Verify Company</button>
                   )}
                 </div>
               ))}
@@ -394,68 +370,59 @@ export default function App() {
         </main>
       )}
 
-      {isNotificationsOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white max-w-md w-full rounded-3xl p-6 shadow-2xl border border-slate-100">
-            <div className="flex justify-between items-center mb-4 border-b pb-2">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2"><Mail className="w-5 h-5 text-blue-600" /> Simulated Email Inbox</h3>
-              <button onClick={() => setIsNotificationsOpen(false)}><X className="w-5 h-5 text-slate-400" /></button>
-            </div>
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {notifications.map(n => (
-                <div key={n.id} className="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                  <p className="text-xs font-bold text-slate-900">{n.subject}</p>
-                  <p className="text-xs text-slate-600 mt-1">{n.body}</p>
-                  <span className="text-[10px] text-slate-400 mt-2 block">{n.timestamp}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {viewResumeUrl && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white max-w-4xl w-full h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2"><FileText className="w-5 h-5 text-blue-600" /> Resume Preview</h3>
-              <button onClick={() => setViewResumeUrl(null)}><X className="w-5 h-5" /></button>
-            </div>
-            <div className="flex-1 bg-slate-100 p-4">
-              <iframe src={viewResumeUrl} className="w-full h-full rounded-2xl border border-slate-200 bg-white" title="Resume Preview" />
-            </div>
-          </div>
-        </div>
-      )}
-
       {selectedJobForApp && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white max-w-md w-full rounded-3xl p-6 shadow-2xl">
-            <h3 className="text-base font-bold mb-4">Submit Application</h3>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-slate-900">Apply to {selectedJobForApp.companyName}</h3>
+              <button onClick={() => setSelectedJobForApp(null)} className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600"><X className="w-4 h-4" /></button>
+            </div>
             <form onSubmit={handleApplySubmit} className="space-y-4">
-              <input type="file" accept="application/pdf" onChange={(e) => setResumeFile(e.target.files[0])} className="text-xs" />
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setSelectedJobForApp(null)} className="px-4 py-2 text-xs">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs">Submit</button>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Position</label>
+                <input type="text" disabled value={selectedJobForApp.title} className="w-full px-4 py-2.5 bg-slate-100 rounded-xl text-xs text-slate-600 font-semibold border border-slate-200" />
               </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Upload Resume (PDF)</label>
+                <input type="file" accept=".pdf,image/*" onChange={(e) => setResumeFile(e.target.files[0])} className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+              </div>
+              <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md shadow-blue-500/20">Submit Application</button>
             </form>
           </div>
         </div>
       )}
 
       {isPostJobOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white max-w-lg w-full rounded-3xl p-6 shadow-2xl">
-            <h3 className="text-base font-bold mb-4">Post New Opening</h3>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-slate-900">Post New Internship / Job Opening</h3>
+              <button onClick={() => setIsPostJobOpen(false)} className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600"><X className="w-4 h-4" /></button>
+            </div>
             <form onSubmit={handlePostJobSubmit} className="space-y-3">
-              <input type="text" required value={newJob.title} onChange={(e) => setNewJob({...newJob, title: e.target.value})} placeholder="Job Title" className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs" />
-              <input type="text" required value={newJob.location} onChange={(e) => setNewJob({...newJob, location: e.target.value})} placeholder="Location" className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs" />
-              <input type="text" required value={newJob.stipend} onChange={(e) => setNewJob({...newJob, stipend: e.target.value})} placeholder="Stipend" className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs" />
-              <textarea rows="3" required value={newJob.description} onChange={(e) => setNewJob({...newJob, description: e.target.value})} placeholder="Description" className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs" />
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setIsPostJobOpen(false)} className="px-4 py-2 text-xs">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs">Publish</button>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Job Title</label>
+                <input type="text" required value={newJob.title} onChange={(e) => setNewJob({...newJob, title: e.target.value})} placeholder="e.g. Junior Web Developer OJT" className="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs outline-none" />
               </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Company Name</label>
+                <input type="text" required value={newJob.companyName} onChange={(e) => setNewJob({...newJob, companyName: e.target.value})} placeholder="e.g. TechSolutions Inc." className="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Location</label>
+                  <input type="text" required value={newJob.location} onChange={(e) => setNewJob({...newJob, location: e.target.value})} placeholder="e.g. San Mateo, Rizal" className="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs outline-none" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Stipend / Allowance</label>
+                  <input type="text" required value={newJob.stipend} onChange={(e) => setNewJob({...newJob, stipend: e.target.value})} placeholder="e.g. PHP 500 / day" className="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">Description</label>
+                <textarea rows="3" required value={newJob.description} onChange={(e) => setNewJob({...newJob, description: e.target.value})} placeholder="Job description and requirements..." className="w-full px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs outline-none resize-none"></textarea>
+              </div>
+              <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-500/20 mt-2">Publish Opening</button>
             </form>
           </div>
         </div>
