@@ -54,7 +54,7 @@ let db = {
   jobs: [
     {
       id: 1,
-      employerId: '2',
+      employerId: '3',
       companyName: 'TechSolutions Inc.',
       title: 'Junior Software Engineer (OJT)',
       category: 'IT / Web Dev',
@@ -142,12 +142,12 @@ app.patch('/api/student/hours', authenticateToken, (req, res) => {
 app.get('/api/jobs', (req, res) => res.json(db.jobs));
 
 app.post('/api/jobs', authenticateToken, (req, res) => {
-  if (req.user.role !== 'employer') return res.status(403).json({ error: 'Unauthorized' });
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
   const { title, companyName, category, type, mode, location, stipend, description } = req.body;
   const newJob = {
     id: Date.now(),
     employerId: req.user.userId,
-    companyName: companyName || req.user.name,
+    companyName: companyName || 'Admin Official Posting',
     title, category, type, mode, location, stipend, description,
     posted: 'Just now',
     status: 'Active'
@@ -157,7 +157,7 @@ app.post('/api/jobs', authenticateToken, (req, res) => {
 });
 
 app.delete('/api/jobs/:id', authenticateToken, (req, res) => {
-  if (req.user.role !== 'employer') return res.status(403).json({ error: 'Unauthorized' });
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
   const jobId = parseInt(req.params.id);
   const jobIndex = db.jobs.findIndex(j => j.id === jobId);
   if (jobIndex === -1) return res.status(404).json({ error: 'Job not found' });
