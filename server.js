@@ -100,10 +100,7 @@ const authenticateToken = (req, res, next) => {
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   const user = db.users.find(u => u.email === email && u.password === password);
-
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid credentials. Please use demo account details.' });
-  }
+  if (!user) return res.status(401).json({ error: 'Invalid credentials. Please use demo account details.' });
 
   const token = jwt.sign(
     { userId: user.id, role: user.role, name: user.name, email: user.email },
@@ -215,11 +212,13 @@ app.get('/api/messages', authenticateToken, (req, res) => {
 
 app.post('/api/messages', authenticateToken, (req, res) => {
   const { recipientId, text } = req.body;
+  if (!recipientId || !text) return res.status(400).json({ error: 'Recipient and text required' });
+
   const newMessage = {
     id: Date.now(),
     senderId: req.user.userId,
     senderName: req.user.name,
-    recipientId,
+    recipientId: String(recipientId),
     text,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   };

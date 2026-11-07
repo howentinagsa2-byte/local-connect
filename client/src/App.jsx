@@ -242,7 +242,6 @@ export default function App() {
             <p className="mt-2 text-blue-100 text-sm">Discover verified local internships and entry-level positions tailored for IT students.</p>
           </div>
 
-          {/* RESTORED: OJT Hours Progress Tracker Card */}
           <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="w-full">
               <div className="flex justify-between items-center mb-2">
@@ -330,9 +329,9 @@ export default function App() {
                 <div className="bg-white rounded-2xl border border-slate-200/80 h-[500px] flex flex-col overflow-hidden shadow-sm">
                   <div className="p-4 bg-slate-50 border-b border-slate-200 font-bold text-sm text-slate-900">Live Chat with HR / Employer</div>
                   <div className="flex-1 p-4 overflow-y-auto space-y-3">
-                    {messages.map(m => (
-                      <div key={m.id} className={`flex flex-col ${m.senderId === currentUser.id ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl text-xs ${m.senderId === currentUser.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-800'}`}>
+                    {messages.filter(m => m.senderId === currentUser.userId || m.recipientId === currentUser.userId).map(m => (
+                      <div key={m.id} className={`flex flex-col ${m.senderId === currentUser.userId ? 'items-end' : 'items-start'}`}>
+                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl text-xs ${m.senderId === currentUser.userId ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-800'}`}>
                           <p>{m.text}</p>
                           <span className="text-[9px] opacity-70 mt-1 block text-right">{m.timestamp}</span>
                         </div>
@@ -357,7 +356,6 @@ export default function App() {
             <button onClick={() => setIsPostJobOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-sm"><PlusCircle className="w-4 h-4" /><span>Post Opening</span></button>
           </div>
 
-          {/* RESTORED: Employer Active Job Listings Manager with Delete */}
           <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm mb-8">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="font-bold text-slate-900 text-sm">My Posted Job Listings</h3>
@@ -386,8 +384,57 @@ export default function App() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 font-bold text-sm">Student Applicants & Chat</div>
+          {/* Employer Messaging & Applicant Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm lg:col-span-1">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Applicants & Chats</h3>
+              <div className="space-y-2">
+                {applications.map(app => (
+                  <button
+                    key={app.id}
+                    onClick={() => setChatRecipient({ id: app.studentId, name: app.studentName })}
+                    className={`w-full p-3 rounded-xl text-left transition-all flex items-center justify-between ${chatRecipient?.id === app.studentId ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-100'}`}
+                  >
+                    <div>
+                      <p className="text-xs font-bold">{app.studentName}</p>
+                      <p className="text-[10px] opacity-80">{app.jobTitle}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200/80 h-[500px] flex flex-col overflow-hidden shadow-sm lg:col-span-2">
+              <div className="p-4 bg-slate-50 border-b border-slate-200 font-bold text-sm text-slate-900">
+                Chat with: {chatRecipient ? chatRecipient.name : 'Select an applicant from the left'}
+              </div>
+              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/30">
+                {!chatRecipient ? (
+                  <p className="text-xs text-slate-400 text-center py-20">Click an applicant to chat directly.</p>
+                ) : (
+                  messages
+                    .filter(m => (m.senderId === currentUser.userId && m.recipientId === chatRecipient.id) || (m.senderId === chatRecipient.id && m.recipientId === currentUser.userId))
+                    .map(m => (
+                      <div key={m.id} className={`flex flex-col ${m.senderId === currentUser.userId ? 'items-end' : 'items-start'}`}>
+                        <div className={`max-w-xs md:max-w-md p-3 rounded-2xl text-xs ${m.senderId === currentUser.userId ? 'bg-blue-600 text-white' : 'bg-white text-slate-800 border border-slate-200 shadow-sm'}`}>
+                          <p>{m.text}</p>
+                          <span className="text-[9px] opacity-70 mt-1 block text-right">{m.timestamp}</span>
+                        </div>
+                      </div>
+                    ))
+                )}
+              </div>
+              {chatRecipient && (
+                <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-200 flex gap-2 bg-white">
+                  <input type="text" value={chatMessageText} onChange={(e) => setChatMessageText(e.target.value)} placeholder={`Reply to ${chatRecipient.name}...`} className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none" />
+                  <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1"><Send className="w-3.5 h-3.5" /> Send</button>
+                </form>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm mt-8">
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 font-bold text-sm">Manage Applicant Status</div>
             <div className="divide-y divide-slate-100">
               {applications.map(appItem => (
                 <div key={appItem.id} className="p-6 flex items-center justify-between">
@@ -397,7 +444,6 @@ export default function App() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <button onClick={() => setViewResumeUrl(`${API_BASE}${appItem.resumeUrl}`)} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-semibold flex items-center gap-1"><Eye className="w-3.5 h-3.5" /> Resume</button>
-                    <button onClick={() => { setChatRecipient({ id: appItem.studentId, name: appItem.studentName }); setActiveTab('messages'); }} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-semibold flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> Chat</button>
                     <button onClick={() => handleUpdateAppStatus(appItem.id, 'Interview Scheduled')} className="px-3 py-1.5 bg-purple-50 text-purple-700 text-xs font-semibold rounded-xl">Interview</button>
                     <button onClick={() => handleUpdateAppStatus(appItem.id, 'Hired')} className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl">Hire</button>
                   </div>
@@ -415,7 +461,6 @@ export default function App() {
             <button onClick={handleExportCSV} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm"><Download className="w-4 h-4" /> Export Report (CSV)</button>
           </div>
           
-          {/* RESTORED: Admin Employer Verification Queue with Approve Button */}
           <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 font-bold text-sm">Employer Verification Queue</div>
             <div className="divide-y divide-slate-100">
@@ -440,7 +485,6 @@ export default function App() {
         </main>
       )}
 
-      {/* Notifications Drawer Modal */}
       {isNotificationsOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white max-w-md w-full rounded-3xl p-6 shadow-2xl border border-slate-100">
@@ -461,7 +505,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Resume Viewer Modal */}
       {viewResumeUrl && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white max-w-4xl w-full h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
@@ -476,7 +519,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Apply Modal */}
       {selectedJobForApp && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white max-w-md w-full rounded-3xl p-6 shadow-2xl">
@@ -492,7 +534,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Post Job Modal */}
       {isPostJobOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white max-w-lg w-full rounded-3xl p-6 shadow-2xl">
