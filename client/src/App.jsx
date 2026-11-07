@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, Mail } from 'lucide-react';
+import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, Download, Mail, Bell } from 'lucide-react';
 
 const API_BASE = "https://local-connect-api-t9jx.onrender.com";
 
@@ -84,7 +84,7 @@ export default function App() {
     if (resumeFile) formData.append('resume', resumeFile);
     try {
       const res = await fetch(`${API_BASE}/api/applications`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-      if (res.ok) { alert('Application and resume submitted!'); setSelectedJobForApp(null); setResumeFile(null); fetchStudentApplications(); }
+      if (res.ok) { alert('Application and resume submitted successfully!'); setSelectedJobForApp(null); setResumeFile(null); fetchStudentApplications(); fetchNotifications(); }
     } catch (err) {}
   };
 
@@ -118,8 +118,18 @@ export default function App() {
       if (res.ok) {
         fetchEmployerApplications();
         fetchNotifications();
-        alert(`Status updated to ${newStatus}. Simulated email notification dispatched to student!`);
+        alert(`Status updated to "${newStatus}". Notification dispatched to student.`);
       }
+    } catch (err) {}
+  };
+
+  const handleMarkNotificationRead = async (notifId) => {
+    try {
+      await fetch(`${API_BASE}/api/notifications/${notifId}/read`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      fetchNotifications();
     } catch (err) {}
   };
 
@@ -189,8 +199,10 @@ export default function App() {
     );
   }
 
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans relative">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -202,8 +214,8 @@ export default function App() {
           </div>
           <div className="flex items-center space-x-4">
             <button onClick={() => setIsNotificationsOpen(!isNotificationsOpen)} className="relative p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
-              <Mail className="w-4 h-4" />
-              {notifications.length > 0 && <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{notifications.length}</span>}
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">{unreadCount}</span>}
             </button>
             <div className="text-right hidden sm:block">
               <p className="text-xs font-bold text-slate-900">{currentUser.name}</p>
@@ -213,6 +225,32 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {/* Notifications Drawer / Dropdown */}
+      {isNotificationsOpen && (
+        <div className="absolute right-4 top-20 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-4">
+          <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
+            <h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Notifications & Status Updates</h4>
+            <button onClick={() => setIsNotificationsOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+          </div>
+          <div className="space-y-2.5 max-h-80 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4">No notifications yet.</p>
+            ) : (
+              notifications.map(n => (
+                <div key={n.id} onClick={() => handleMarkNotificationRead(n.id)} className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${n.read ? 'bg-slate-50 border-slate-200 opacity-70' : 'bg-blue-50/60 border-blue-200 shadow-sm'}`}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-bold text-slate-900">{n.subject}</span>
+                    <span className="text-[10px] text-slate-400">{n.timestamp}</span>
+                  </div>
+                  <p className="text-slate-600 leading-relaxed">{n.body}</p>
+                  {!n.read && <span className="inline-block mt-1.5 text-[9px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-semibold">New</span>}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {currentUser.role === 'student' && (
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -230,10 +268,7 @@ export default function App() {
                 </span>
               </div>
               <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                <div 
-                  className="bg-blue-600 h-full rounded-full transition-all duration-500" 
-                  style={{ width: `${Math.min(100, ((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}
-                ></div>
+                <div className="bg-blue-600 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, ((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}></div>
               </div>
             </div>
             <button 
@@ -329,13 +364,31 @@ export default function App() {
                       <h4 className="font-bold text-slate-900 text-sm">{job.title}</h4>
                       <p className="text-xs text-slate-500">{job.category} • {job.location} • <strong className="text-emerald-600">{job.stipend}</strong></p>
                     </div>
-                    <button 
-                      onClick={() => handleDeleteJob(job.id)}
-                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-xl flex items-center space-x-1 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete Listing</span>
-                    </button>
+                    <button onClick={() => handleDeleteJob(job.id)} className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-xl flex items-center space-x-1 transition-colors"><Trash2 className="w-3.5 h-3.5" /><span>Delete Listing</span></button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 font-bold text-sm">Manage Applicant Statuses & Resumes</div>
+            <div className="divide-y divide-slate-100">
+              {applications.length === 0 ? (
+                <p className="text-xs text-slate-500 py-6 text-center">No applicants yet.</p>
+              ) : (
+                applications.map(appItem => (
+                  <div key={appItem.id} className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">{appItem.studentName}</h4>
+                      <p className="text-xs text-slate-500">Applied for: <strong className="text-slate-700">{appItem.jobTitle}</strong> ({appItem.studentEmail})</p>
+                      <p className="text-xs text-slate-400 mt-1">Status: <span className="font-semibold text-blue-600">{appItem.status}</span></p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <a href={`${API_BASE}${appItem.resumeUrl}`} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold flex items-center gap-1 transition-colors"><Eye className="w-3.5 h-3.5" /> View Resume</a>
+                      <button onClick={() => handleUpdateAppStatus(appItem.id, 'Interview Scheduled')} className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold rounded-xl transition-colors">Schedule Interview</button>
+                      <button onClick={() => handleUpdateAppStatus(appItem.id, 'Accepted')} className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-xl transition-colors">Accept</button>
+                    </div>
                   </div>
                 ))
               )}

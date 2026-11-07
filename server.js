@@ -183,6 +183,20 @@ app.post('/api/applications', authenticateToken, upload.single('resume'), (req, 
     resumeUrl: req.file ? `/uploads/${req.file.filename}` : '/uploads/sample_resume.pdf'
   };
   db.applications.unshift(newApp);
+
+  // Notify employer
+  const employerUser = db.users.find(u => u.name === targetJob.companyName || u.role === 'employer');
+  if (employerUser) {
+    db.notifications.unshift({
+      id: Date.now(),
+      recipientEmail: employerUser.email,
+      subject: `New Application: ${targetJob.title}`,
+      body: `${req.user.name} submitted an application for ${targetJob.title}.`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    });
+  }
+
   res.status(201).json({ message: 'Application submitted', application: newApp });
 });
 
@@ -203,11 +217,17 @@ app.patch('/api/applications/:id/status', authenticateToken, (req, res) => {
     read: false
   });
 
-  res.json({ message: 'Status updated and email notification dispatched', application: appItem });
+  res.json({ message: 'Status updated and notification dispatched', application: appItem });
 });
 
 app.get('/api/notifications', authenticateToken, (req, res) => {
   res.json(db.notifications.filter(n => n.recipientEmail === req.user.email));
+});
+
+app.patch('/api/notifications/:id/read', authenticateToken, (req, res) => {
+  const notif = db.notifications.find(n => n.id === parseInt(req.params.id));
+  if (notif) notif.read = true;
+  res.json({ message: 'Notification marked as read' });
 });
 
 app.get('/api/admin/export-csv', authenticateToken, (req, res) => {
