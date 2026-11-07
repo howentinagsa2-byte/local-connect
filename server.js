@@ -475,5 +475,22 @@ app.patch('/api/admin/companies/:id/verify', authenticateToken, (req, res) => {
   res.json({ message: 'Company verified successfully', company });
 });
 
+// Cancel / Remove Company Partnership Route (Admin only)
+app.delete('/api/admin/companies/:id', authenticateToken, (req, res) => {
+  const db = loadDb();
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Unauthorized' });
+  
+  const companyId = parseInt(req.params.id);
+  const companyIndex = db.companies.findIndex(c => c.id === companyId);
+  if (companyIndex === -1) return res.status(404).json({ error: 'Company not found' });
+  
+  const removedCompany = db.companies[companyIndex];
+  db.companies.splice(companyIndex, 1);
+  db.users = db.users.filter(u => u.email !== removedCompany.email);
+  
+  saveDb(db);
+  res.json({ message: 'Partnership cancelled and removed successfully' });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));

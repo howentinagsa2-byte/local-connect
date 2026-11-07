@@ -1,4 +1,4 @@
-// src/App.jsx - Complete Full-Stack Frontend with Hours Tracker controls
+// src/App.jsx - Complete Full-Stack Frontend with Hours Tracker & Cancel Partnership Feature
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2, Eye, EyeOff, Download, Mail, Bell, Settings, Award, UserPlus, User, Plus, Minus } from 'lucide-react';
 
@@ -212,6 +212,22 @@ export default function App() {
       }
     } catch (err) {
       alert('Failed to update hours.');
+    }
+  };
+
+  const handleCancelCompany = async (companyId) => {
+    if (!window.confirm("Are you sure you want to cancel and remove this partnership?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/companies/${companyId}`, { 
+        method: 'DELETE', 
+        headers: { 'Authorization': `Bearer ${token}` } 
+      });
+      if (res.ok) {
+        alert('Partnership cancelled successfully.');
+        fetchAdminCompanies();
+      }
+    } catch (err) {
+      alert('Failed to cancel partnership.');
     }
   };
 
@@ -744,8 +760,11 @@ export default function App() {
                       <div className="flex items-center space-x-3">
                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${c.status === 'Verified' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900' : 'bg-amber-950 text-amber-400 border border-amber-900'}`}>{c.status}</span>
                         {c.status !== 'Verified' && (
-                          <button onClick={() => handleVerifyCompany(c.id)} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold">Approve</button>
+                          <button onClick={() => handleVerifyCompany(c.id)} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold cursor-pointer">Approve</button>
                         )}
+                        <button onClick={() => handleCancelCompany(c.id)} className="px-3 py-1 bg-red-950/60 hover:bg-red-900 text-red-400 border border-red-900/50 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1">
+                          <Trash2 className="w-3.5 h-3.5" /> Cancel
+                        </button>
                       </div>
                     </div>
                   ))}
