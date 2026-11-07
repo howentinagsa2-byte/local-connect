@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle } from 'lucide-react';
+import { Briefcase, Building2, ShieldCheck, Search, PlusCircle, LogOut, FileText, Users, MapPin, Clock, DollarSign, ChevronRight, CheckCircle, X, Upload, Filter, Check, AlertCircle, Trash2 } from 'lucide-react';
 
 const API_BASE = "https://local-connect-api-t9jx.onrender.com";
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('local_connect_user')) || null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('local_connect_user');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [token, setToken] = useState(() => localStorage.getItem('local_connect_token') || '');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -101,6 +104,25 @@ export default function App() {
       });
       if (res.ok) { alert('Job posted!'); setIsPostJobOpen(false); fetchJobs(); }
     } catch (err) { alert('Failed to post.'); }
+  };
+
+  // --- NEW: Delete Job Handler ---
+  const handleDeleteJob = async (jobId) => {
+    if (!window.confirm("Are you sure you want to delete this job listing?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/jobs/${jobId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        alert('Job listing deleted successfully.');
+        fetchJobs();
+      } else {
+        alert('Failed to delete job listing.');
+      }
+    } catch (err) {
+      alert('Error connecting to server.');
+    }
   };
 
   const handleUpdateAppStatus = async (appId, newStatus) => {
@@ -210,7 +232,7 @@ export default function App() {
               <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
                 <div 
                   className="bg-blue-600 h-full rounded-full transition-all duration-500" 
-                  style={{ width: `${((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100}%` }}
+                  style={{ width: `${Math.min(100, ((currentUser.completedHours || 120) / (currentUser.totalRequiredHours || 500)) * 100)}%` }}
                 ></div>
               </div>
             </div>
@@ -218,7 +240,7 @@ export default function App() {
             <button 
               onClick={async () => {
                 const hours = prompt("Enter hours to add (e.g., 8):", "8");
-                if (!hours) return;
+                if (!hours || isNaN(hours)) return;
                 try {
                   const res = await fetch(`${API_BASE}/api/student/hours`, {
                     method: 'PATCH',
@@ -227,13 +249,15 @@ export default function App() {
                   });
                   if (res.ok) {
                     const data = await res.json();
-                    const updatedUser = { ...currentUser, completedHours: data.completedHours };
+                    const updatedUser = { ...currentUser, completedHours: data.completedHours, totalRequiredHours: data.totalRequiredHours };
                     setCurrentUser(updatedUser);
                     localStorage.setItem('local_connect_user', JSON.stringify(updatedUser));
                     alert('Hours updated successfully!');
+                  } else {
+                    alert('Failed to update hours on server.');
                   }
                 } catch (err) {
-                  alert('Failed to update hours.');
+                  alert('Network error while updating hours.');
                 }
               }}
               className="whitespace-nowrap px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-semibold transition-colors shadow-sm"
@@ -334,6 +358,36 @@ export default function App() {
             </div>
             <button onClick={() => setIsPostJobOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 shadow-sm transition-colors"><PlusCircle className="w-4 h-4" /><span>Post New OJT Opening</span></button>
           </div>
+
+          {/* Employer Active Job Listings Manager (with Delete) */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm mb-8">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-bold text-slate-900 text-sm">My Posted Job Listings</h3>
+              <span className="text-xs bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg font-semibold">{jobs.filter(j => j.employerId === currentUser.id || j.companyName === currentUser.name).length} Active Listings</span>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {jobs.filter(j => j.employerId === currentUser.id || j.companyName === currentUser.name).length === 0 ? (
+                <p className="text-xs text-slate-500 py-6 text-center">You have not posted any job listings yet.</p>
+              ) : (
+                jobs.filter(j => j.employerId === currentUser.id || j.companyName === currentUser.name).map(job => (
+                  <div key={job.id} className="p-5 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">{job.title}</h4>
+                      <p className="text-xs text-slate-500 mt-0.5">{job.category} • {job.location} • <strong className="text-emerald-600">{job.stipend}</strong></p>
+                    </div>
+                    <button 
+                      onClick={() => handleDeleteJob(job.id)}
+                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-xl flex items-center space-x-1 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Listing</span>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-sm">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="font-bold text-slate-900 text-sm">Active Candidate Applications</h3>
